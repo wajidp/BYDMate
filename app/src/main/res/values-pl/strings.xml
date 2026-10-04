@@ -2443,4 +2443,10 @@
     <string name="tyre_why_only_p">Wpisać można tylko na P.</string>
     <string name="tyre_not_l3_title">Zapis numerów niedostępny w tym aucie.</string>
     <string name="tyre_not_l3_text">Moduł kół odpowiedział inaczej niż w Leopard 3, więc nie ryzykujemy zapisu. Numery widać, komplety można przechowywać.</string>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">Odtwórz dźwięk</string>
+    <string name="auto_act_play_audio">Odtwórz dźwięk</string>
+    <string name="automation_play_audio_label">Dotknij, aby wybrać plik audio…</string>
+    <string name="auto_msg_play_audio_empty">Akcja #%1$d: nie wybrano pliku audio</string>
+    <string name="dispatch_play_audio_failed">Nie udało się odtworzyć dźwięku</string>
 </resources>

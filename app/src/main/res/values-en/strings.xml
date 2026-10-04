@@ -2288,4 +2288,10 @@
     <string name="tyre_why_only_p">Writing is possible only in P.</string>
     <string name="tyre_not_l3_title">Writing IDs is not available on this car.</string>
     <string name="tyre_not_l3_text">The tyre unit did not answer like on Leopard 3, so we do not risk writing to it. The IDs are shown and the sets can be kept.</string>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">Play sound</string>
+    <string name="auto_act_play_audio">Play sound</string>
+    <string name="automation_play_audio_label">Tap to choose an audio file…</string>
+    <string name="auto_msg_play_audio_empty">Action #%1$d: no audio file selected</string>
+    <string name="dispatch_play_audio_failed">Could not play audio</string>
 </resources>

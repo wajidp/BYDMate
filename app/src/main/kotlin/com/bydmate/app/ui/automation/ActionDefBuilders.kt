@@ -307,6 +307,28 @@ fun ActionDef.withSpeakText(text: String): ActionDef = copy(
     payload = org.json.JSONObject().apply { put("text", text) }.toString()
 )
 
+// --- Play audio helpers: play a user-picked sound file (persisted content:// URI) ---
+
+fun newPlayAudioAction(context: Context): ActionDef = ActionDef(
+    command = "",
+    displayName = context.appLocalizedContext().getString(R.string.auto_act_play_audio),
+    kind = "play_audio",
+    payload = """{"uri":"","name":""}"""
+)
+
+fun ActionDef.playAudioUri(): String =
+    runCatching { org.json.JSONObject(payload ?: "{}").optString("uri") }.getOrDefault("")
+
+fun ActionDef.playAudioName(): String =
+    runCatching { org.json.JSONObject(payload ?: "{}").optString("name") }.getOrDefault("")
+
+fun ActionDef.withPlayAudio(uri: String, name: String): ActionDef = copy(
+    payload = org.json.JSONObject().apply {
+        put("uri", uri)
+        put("name", name)
+    }.toString()
+)
+
 // --- Agent query helpers (v3.6) ---
 
 fun newAgentQueryAction(context: Context): ActionDef = ActionDef(

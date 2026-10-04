@@ -45,6 +45,7 @@ internal object RuleImportSummary {
         "go_back" to R.string.automation_action_go_back,
         "delay" to R.string.automation_action_delay,
         "media_volume" to R.string.automation_action_media_volume,
+        "play_audio" to R.string.automation_action_play_audio,
         "sentry" to R.string.automation_action_sentry,
         "hotspot" to R.string.automation_action_hotspot,
         "cluster_projection" to R.string.automation_action_cluster_projection,
@@ -62,6 +63,7 @@ internal object RuleImportSummary {
         "speak" to "text",
         "agent_query" to "prompt",
         "youtube" to "query",
+        "play_audio" to "name",
     )
 
     /** Kinds whose `minimize` flag sends the app to the background after the launch. */

@@ -2458,4 +2458,10 @@
     <string name="tyre_why_only_p">Прописать можно только на P.</string>
     <string name="tyre_not_l3_title">Запись номеров недоступна на этой машине.</string>
     <string name="tyre_not_l3_text">Блок колёс ответил не так, как на Leopard 3, поэтому писать в него не рискуем. Номера видно, комплекты можно хранить.</string>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">Воспроизвести звук</string>
+    <string name="auto_act_play_audio">Воспроизвести звук</string>
+    <string name="automation_play_audio_label">Нажмите, чтобы выбрать аудиофайл…</string>
+    <string name="auto_msg_play_audio_empty">Действие #%1$d: не выбран аудиофайл</string>
+    <string name="dispatch_play_audio_failed">Не удалось воспроизвести аудио</string>
 </resources>

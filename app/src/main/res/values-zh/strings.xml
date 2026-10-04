@@ -2393,4 +2393,10 @@
     <string name="tyre_why_only_p">只能在 P 挡写入。</string>
     <string name="tyre_not_l3_title">此车辆不支持写入编号。</string>
     <string name="tyre_not_l3_text">车轮模块的应答与 Leopard 3 不一致，因此不冒险写入。编号可以查看，套装可以保存。</string>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">播放声音</string>
+    <string name="auto_act_play_audio">播放声音</string>
+    <string name="automation_play_audio_label">点按以选择音频文件…</string>
+    <string name="auto_msg_play_audio_empty">操作 #%1$d：未选择音频文件</string>
+    <string name="dispatch_play_audio_failed">无法播放音频</string>
 </resources>

@@ -2289,4 +2289,10 @@
     <string name="tyre_why_only_p">Só é possível gravar em P.</string>
     <string name="tyre_not_l3_title">A gravação dos números não está disponível neste carro.</string>
     <string name="tyre_not_l3_text">O módulo das rodas não respondeu como no Leopard 3, por isso não arriscamos gravar. Os números são mostrados e os conjuntos podem ser guardados.</string>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">Reproduzir som</string>
+    <string name="auto_act_play_audio">Reproduzir som</string>
+    <string name="automation_play_audio_label">Toque para escolher um arquivo de áudio…</string>
+    <string name="auto_msg_play_audio_empty">Ação #%1$d: nenhum arquivo de áudio selecionado</string>
+    <string name="dispatch_play_audio_failed">Não foi possível reproduzir o áudio</string>
 </resources>

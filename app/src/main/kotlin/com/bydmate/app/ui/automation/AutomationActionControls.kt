@@ -1,5 +1,12 @@
 package com.bydmate.app.ui.automation
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -59,6 +66,65 @@ import com.bydmate.app.R
 import com.bydmate.app.data.local.entity.ActionDef
 import com.bydmate.app.ui.components.AppLaunchPickerDialog
 import com.bydmate.app.ui.theme.*
+
+// --- Play audio action controls: pick a sound file via SAF, persist read access ---
+
+@Composable
+internal fun PlayAudioActionControls(
+    action: ActionDef,
+    onUpdate: (ActionDef) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val name = action.playAudioName()
+    val uri = action.playAudioUri()
+    val preview = when {
+        name.isNotBlank() -> name
+        uri.isNotBlank() -> uri
+        else -> stringResource(R.string.automation_play_audio_label)
+    }
+    // ACTION_OPEN_DOCUMENT hands back a URI we can persist read access to, so the rule still
+    // plays the file long after the picker closed -- unlike GetContent's one-shot grant.
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { picked: Uri? ->
+        if (picked != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(picked, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            onUpdate(action.withPlayAudio(picked.toString(), queryDisplayName(context, picked)))
+        }
+    }
+
+    Row(
+        modifier = modifier
+            .background(CardSurface, RoundedCornerShape(6.dp))
+            .border(1.dp, CardBorder, RoundedCornerShape(6.dp))
+            .clickable { picker.launch(arrayOf("audio/*")) }
+            .heightIn(min = FIELD_HEIGHT)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.MusicNote,
+            contentDescription = null,
+            tint = AccentTeal,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = preview,
+            fontSize = 16.sp,
+            color = if (name.isBlank() && uri.isBlank()) TextSecondary else TextPrimary,
+            maxLines = 1
+        )
+    }
+}
+
+/** The human-readable file name behind a content URI, or a path fallback when the provider has none. */
+private fun queryDisplayName(context: Context, uri: Uri): String = runCatching {
+    context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+        if (c.moveToFirst() && !c.isNull(0)) c.getString(0) else null
+    }
+}.getOrNull() ?: uri.lastPathSegment ?: uri.toString()
 
 // --- Speak Action Controls (v3.6) ---
 

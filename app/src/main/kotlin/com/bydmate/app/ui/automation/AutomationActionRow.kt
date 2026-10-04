@@ -137,6 +137,8 @@ internal fun ActionRow(
                     AppCloseActionControls(action = action, onUpdate = onUpdate, modifier = fill)
                 "media_key" ->
                     MediaKeyActionControls(payload = action.payload, modifier = fill)
+                "play_audio" ->
+                    PlayAudioActionControls(action = action, onUpdate = onUpdate, modifier = fill)
                 "call" ->
                     CallActionControls(action = action, onUpdate = onUpdate, modifier = fill)
                 "navigate" ->
