@@ -2210,4 +2210,10 @@
         <item quantity="one">%1$d more code did not fit, all of them are in the “Diagnostics” window</item>
         <item quantity="other">%1$d more codes did not fit, all of them are in the “Diagnostics” window</item>
     </plurals>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">Play sound</string>
+    <string name="auto_act_play_audio">Play sound</string>
+    <string name="automation_play_audio_label">Tap to choose an audio file…</string>
+    <string name="auto_msg_play_audio_empty">Action #%1$d: no audio file selected</string>
+    <string name="dispatch_play_audio_failed">Could not play audio</string>
 </resources>

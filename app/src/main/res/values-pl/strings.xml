@@ -2372,4 +2372,10 @@
         <item quantity="many">Jeszcze %1$d kodów się nie zmieściło, wszystkie w oknie „Diagnostyka”</item>
         <item quantity="other">Jeszcze %1$d kodu się nie zmieściło, wszystkie w oknie „Diagnostyka”</item>
     </plurals>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">Odtwórz dźwięk</string>
+    <string name="auto_act_play_audio">Odtwórz dźwięk</string>
+    <string name="automation_play_audio_label">Dotknij, aby wybrać plik audio…</string>
+    <string name="auto_msg_play_audio_empty">Akcja #%1$d: nie wybrano pliku audio</string>
+    <string name="dispatch_play_audio_failed">Nie udało się odtworzyć dźwięku</string>
 </resources>

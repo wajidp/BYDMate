@@ -2372,4 +2372,10 @@
         <item quantity="many">Яшчэ %1$d кодаў не змясціліся, усе ў акне «Дыягностыка»</item>
         <item quantity="other">Яшчэ %1$d кода не змясціліся, усе ў акне «Дыягностыка»</item>
     </plurals>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">Прайграць гук</string>
+    <string name="auto_act_play_audio">Прайграць гук</string>
+    <string name="automation_play_audio_label">Націсніце, каб выбраць аўдыяфайл…</string>
+    <string name="auto_msg_play_audio_empty">Дзеянне #%1$d: аўдыяфайл не выбраны</string>
+    <string name="dispatch_play_audio_failed">Не ўдалося прайграць аўдыя</string>
 </resources>

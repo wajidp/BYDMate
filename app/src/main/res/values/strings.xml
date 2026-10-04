@@ -2388,4 +2388,10 @@
         <item quantity="other">Ещё %1$d кода не поместились, все в окне «Диагностика»</item>
     </plurals>
     <string name="tech_value_pm25" translatable="false">%1$d µg/m³</string>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">Воспроизвести звук</string>
+    <string name="auto_act_play_audio">Воспроизвести звук</string>
+    <string name="automation_play_audio_label">Нажмите, чтобы выбрать аудиофайл…</string>
+    <string name="auto_msg_play_audio_empty">Действие #%1$d: не выбран аудиофайл</string>
+    <string name="dispatch_play_audio_failed">Не удалось воспроизвести аудио</string>
 </resources>

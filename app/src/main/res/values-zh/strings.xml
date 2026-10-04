@@ -2319,4 +2319,10 @@
     <plurals name="tech_dtc_more_codes">
         <item quantity="other">还有 %1$d 个故障码放不下，全部见“诊断”窗口</item>
     </plurals>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">播放声音</string>
+    <string name="auto_act_play_audio">播放声音</string>
+    <string name="automation_play_audio_label">点按以选择音频文件…</string>
+    <string name="auto_msg_play_audio_empty">操作 #%1$d：未选择音频文件</string>
+    <string name="dispatch_play_audio_failed">无法播放音频</string>
 </resources>

@@ -2981,6 +2981,8 @@ class AgentTools @Inject constructor(
                 "некорректное состояние экрана (действие ${err.index})"
             is ActionValidationError.MediaKeyInvalid ->
                 "для media_key нужен key: play или pause (действие ${err.index})"
+            is ActionValidationError.PlayAudioUriEmpty ->
+                "не выбран аудиофайл (действие ${err.index})"
             is ActionValidationError.SpeakTextEmpty ->
                 "не задан текст для озвучки (действие ${err.index})"
             is ActionValidationError.AgentQueryPromptEmpty ->

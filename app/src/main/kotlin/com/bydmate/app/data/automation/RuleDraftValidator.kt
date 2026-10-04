@@ -23,6 +23,7 @@ sealed class ActionValidationError {
     data class HotspotInvalid(val index: Int) : ActionValidationError()
     data class ScreenInvalid(val index: Int) : ActionValidationError()
     data class MediaKeyInvalid(val index: Int) : ActionValidationError()
+    data class PlayAudioUriEmpty(val index: Int) : ActionValidationError()
     data class SpeakTextEmpty(val index: Int) : ActionValidationError()
     data class AgentQueryPromptEmpty(val index: Int) : ActionValidationError()
     data class SplitScreenNarrowEmpty(val index: Int) : ActionValidationError()
@@ -125,6 +126,9 @@ object RuleDraftValidator {
                 }
                 "media_key" -> {
                     if (ActionDispatcher.mediaKeyCode(a.payload) == null) return ActionValidationError.MediaKeyInvalid(n)
+                }
+                "play_audio" -> {
+                    if (ActionDispatcher.playAudioUri(a.payload) == null) return ActionValidationError.PlayAudioUriEmpty(n)
                 }
                 "speak" -> {
                     if (payloadJson(a.payload).optString("text").isBlank()) {
