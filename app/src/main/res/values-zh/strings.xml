@@ -2121,4 +2121,10 @@
     <string name="tech_card_fuel">燃油</string>
     <string name="settings_fuel_price_label">每升油价</string>
     <string name="settings_fuel_price_hint">每升价格，适用于此日期起的行程</string>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">播放声音</string>
+    <string name="auto_act_play_audio">播放声音</string>
+    <string name="automation_play_audio_label">点按以选择音频文件…</string>
+    <string name="auto_msg_play_audio_empty">操作 #%1$d：未选择音频文件</string>
+    <string name="dispatch_play_audio_failed">无法播放音频</string>
 </resources>

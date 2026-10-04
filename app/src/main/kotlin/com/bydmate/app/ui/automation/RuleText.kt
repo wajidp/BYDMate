@@ -258,6 +258,7 @@ internal fun actionText(a: ActionDef, lc: Context): String = when (a.kind) {
     )
     "media_key" -> ActionDispatcher.mediaKeyNameRes(a.payload)?.let { lc.getString(it) } ?: a.displayName
     "screen" -> ActionDispatcher.screenNameRes(a.payload)?.let { lc.getString(it) } ?: a.displayName
+    "play_audio" -> quoted(R.string.automation_action_play_audio, a.playAudioName(), lc)
     "media_volume" -> a.payload?.toIntOrNull()
         ?.let { lc.getString(R.string.auto_ui_act_volume, lc.getString(R.string.automation_action_media_volume), it) }
         ?: a.displayName
@@ -337,6 +338,7 @@ private val PAYLOAD_KIND_NAMES = mapOf(
     "call" to R.string.automation_action_call,
     "navigate" to R.string.automation_action_navigate,
     "url" to R.string.automation_action_url,
+    "play_audio" to R.string.automation_action_play_audio,
     "sentry" to R.string.automation_action_sentry,
     "hotspot" to R.string.automation_action_hotspot,
     "cluster_projection" to R.string.automation_action_cluster_projection,
@@ -548,6 +550,7 @@ internal fun ActionValidationError.toMissing(lc: Context): Missing.Action = when
     is ActionValidationError.HotspotInvalid -> Missing.Action(index, lc.getString(R.string.auto_msg_hotspot_invalid, index))
     is ActionValidationError.ScreenInvalid -> Missing.Action(index, lc.getString(R.string.auto_msg_screen_invalid, index))
     is ActionValidationError.MediaKeyInvalid -> Missing.Action(index, lc.getString(R.string.auto_msg_media_key_invalid, index))
+    is ActionValidationError.PlayAudioUriEmpty -> Missing.Action(index, lc.getString(R.string.auto_msg_play_audio_empty, index))
     is ActionValidationError.SpeakTextEmpty -> Missing.Action(index, lc.getString(R.string.auto_msg_speak_text_empty, index))
     is ActionValidationError.AgentQueryPromptEmpty -> Missing.Action(index, lc.getString(R.string.auto_msg_agent_query_prompt_empty, index))
     is ActionValidationError.SplitScreenNarrowEmpty -> Missing.Action(index, lc.getString(R.string.auto_msg_split_narrow_empty, index))

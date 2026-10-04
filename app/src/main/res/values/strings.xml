@@ -2174,4 +2174,10 @@
     <string name="tech_card_fuel">Топливо</string>
     <string name="settings_fuel_price_label">Цена литра</string>
     <string name="settings_fuel_price_hint">за литр, на поездки с этой даты</string>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">Воспроизвести звук</string>
+    <string name="auto_act_play_audio">Воспроизвести звук</string>
+    <string name="automation_play_audio_label">Нажмите, чтобы выбрать аудиофайл…</string>
+    <string name="auto_msg_play_audio_empty">Действие #%1$d: не выбран аудиофайл</string>
+    <string name="dispatch_play_audio_failed">Не удалось воспроизвести аудио</string>
 </resources>

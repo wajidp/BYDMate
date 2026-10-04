@@ -2003,4 +2003,10 @@
     <string name="tech_card_fuel">Combustível</string>
     <string name="settings_fuel_price_label">Preço por litro</string>
     <string name="settings_fuel_price_hint">por litro, para viagens a partir desta data</string>
+    <!-- play_audio automation action -->
+    <string name="automation_action_play_audio">Reproduzir som</string>
+    <string name="auto_act_play_audio">Reproduzir som</string>
+    <string name="automation_play_audio_label">Toque para escolher um arquivo de áudio…</string>
+    <string name="auto_msg_play_audio_empty">Ação #%1$d: nenhum arquivo de áudio selecionado</string>
+    <string name="dispatch_play_audio_failed">Não foi possível reproduzir o áudio</string>
 </resources>
