@@ -25,7 +25,7 @@ class UpdateChecker @Inject constructor(
     private val appStrings: AppStrings,
 ) {
     companion object {
-        private const val GITHUB_API = "https://api.github.com/repos/AndyShaman/BYDMate/releases/latest"
+        private const val GITHUB_API = "https://api.github.com/repos/${com.bydmate.app.BuildConfig.UPDATE_REPO}/releases/latest"
         private const val PREFS_NAME = "update_prefs"
         private const val KEY_LAST_CHECK = "last_check"
         private const val KEY_AUTO_CHECK = "auto_check_enabled"
