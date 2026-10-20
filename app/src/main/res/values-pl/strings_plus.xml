@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- BYDMate+ only (fork). Kept out of strings.xml so upstream rebases never conflict. -->
+<resources>
+    <string name="plus_aeb_title">Trzymaj AEB wyłączone</string>
+    <string name="plus_aeb_desc">Po każdym uruchomieniu auta BYDMate+ raz wyłącza automatyczne hamowanie awaryjne, gdy auto stoi. AEB można włączyć z powrotem w menu auta — do następnego uruchomienia.</string>
+    <string name="plus_aeb_last">Ostatnio: %1$s</string>
+    <string name="plus_aeb_confirm_title">Ostrzeżenie o bezpieczeństwie</string>
+    <string name="plus_aeb_confirm_body">AEB (automatyczne hamowanie awaryjne) samo hamuje auto przed zderzeniem. Gdy jest wyłączone, auto nie zahamuje samo w obliczu zderzenia.\n\nOdpowiadasz za bezpieczną jazdę bez AEB, także gdy prowadzi ktoś inny.</string>
+    <string name="plus_aeb_confirm_enable">Rozumiem, wyłączaj</string>
+    <string name="plus_aeb_confirm_cancel">Anuluj</string>
+    <string name="plus_aeb_toast_switched_off">BYDMate+: AEB wyłączone</string>
+</resources>
