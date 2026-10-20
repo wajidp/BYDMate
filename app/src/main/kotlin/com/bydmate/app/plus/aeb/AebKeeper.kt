@@ -6,6 +6,7 @@ import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
 import com.bydmate.app.R
+import com.bydmate.app.data.autoservice.SentinelDecoder
 import com.bydmate.app.data.remote.DiParsData
 import com.bydmate.app.data.vehicle.HelperClient
 import com.bydmate.app.data.vehicle.VehicleApi
@@ -17,6 +18,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -49,16 +53,18 @@ import kotlin.math.abs
  *
  * Decisions go to a small persistent ring ([journalLines]), shown on the settings card, since
  * logcat on DiLink is gone within minutes.
+ *
+ * [aebOff] drives the red dot on the floating widget: while the switch is on, the AEB state fid
+ * is read (read only) every [AebDotState.REFRESH_MS], so the dot goes away once the driver switches AEB
+ * back on. Switch off → no reads, no dot.
  */
 @Singleton
 class AebKeeper internal constructor(
     private val prefs: SharedPreferences,
     private val channel: AebKeepOff,
+    private val dot: AebDotState,
     private val scope: CoroutineScope,
-    /** elapsedRealtime in production. */
-    private val clock: () -> Long,
-    /** currentTimeMillis in production; only compared with [clock] to tell a reboot apart. */
-    private val wallClock: () -> Long,
+    private val clocks: AebClocks,
     /** Tells the driver AEB was just switched off (a toast in production). */
     private val onSwitchedOff: suspend () -> Unit,
 ) {
@@ -67,20 +73,29 @@ class AebKeeper internal constructor(
         vehicleApi: VehicleApi,
         helper: HelperClient,
     ) : this(
+        context,
+        vehicleApi,
+        AebStateReader { helper.read(WriteAllowlist.AEB_DEV, WriteAllowlist.AEB_STATE_FID)?.toInt() },
+    )
+
+    private constructor(context: Context, vehicleApi: VehicleApi, reader: AebStateReader) : this(
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-        AebKeepOff(
-            AebWriter { action, value, guard -> write(vehicleApi, action, value, guard) },
-            AebStateReader { helper.read(WriteAllowlist.AEB_DEV, WriteAllowlist.AEB_STATE_FID)?.toInt() },
-        ),
+        AebKeepOff(AebWriter { action, value, guard -> write(vehicleApi, action, value, guard) }, reader),
+        AebDotState(reader),
         CoroutineScope(SupervisorJob() + Dispatchers.IO),
-        { SystemClock.elapsedRealtime() },
-        { System.currentTimeMillis() },
+        AebClocks({ SystemClock.elapsedRealtime() }, { System.currentTimeMillis() }),
         {
             withContext(Dispatchers.Main) {
                 runCatching { Toast.makeText(context, R.string.plus_aeb_toast_switched_off, Toast.LENGTH_LONG).show() }
             }
         },
     )
+
+    /** True while the car last reported AEB off and the switch is on. */
+    val aebOff: StateFlow<Boolean> get() = dot.aebOff
+    private val clock = clocks.elapsed
+    private val wallClock = clocks.wall
+    private val journal = AebJournal(prefs, clocks.wall)
 
     @Volatile private var done = false
     @Volatile private var job: Job? = null
@@ -96,7 +111,10 @@ class AebKeeper internal constructor(
 
     var enabled: Boolean
         get() = prefs.getBoolean(KEY_ENABLED, false)
-        set(value) { prefs.edit().putBoolean(KEY_ENABLED, value).apply() }
+        set(value) {
+            prefs.edit().putBoolean(KEY_ENABLED, value).apply()
+            if (!value) dot.reset()
+        }
 
     /** Called with every poll snapshot by TrackingService. Cheap when the switch is off. */
     @Synchronized
@@ -106,22 +124,35 @@ class AebKeeper internal constructor(
         lastGear = data.gear
         lastSnapshotAt = now
         if (firstSnapshot) onFirstSnapshot(now, data.mileage)
-        markAlive(now, data.mileage)
+        // Not while the car reports off: a process that outlives car off must not make the next
+        // real start look like the same drive.
+        if (data.powerState != 0) markAlive(now, data.mileage)
         // Kept current while an attempt runs, so a retry after the car moved settles again first.
         if (!parked(data.speed, data.gear)) parkedSince = null
-        if (done || !enabled || job?.isActive == true) return
-        if (outOfTries(now)) return
-        if (readyToTry(now, parked(data.speed, data.gear))) {
+        if (!enabled) {
+            dot.reset()
+            return
+        }
+        // Car reported off (powerState 0): nothing to read or switch. Unknown power state = carry on.
+        if (data.powerState == 0) return
+        if (mayStartAttempt(now, parked(data.speed, data.gear))) {
             lastAttemptAt = now
             job = scope.launch { attempt() }
         }
+        // Not while an attempt runs: it reports the state itself.
+        if (job?.isActive != true) dot.refreshIfDue(scope, now) { enabled }
+    }
+
+    private fun mayStartAttempt(now: Long, parkedNow: Boolean): Boolean {
+        if (done || job?.isActive == true) return false
+        return !outOfTries(now) && readyToTry(now, parkedNow)
     }
 
     private fun onFirstSnapshot(now: Long, mileage: Double?) {
         firstSnapshot = false
         if (!sameStartAsPreviousProcess(now, mileage)) return
         done = true
-        if (enabled) journal("app restarted during this car start: nothing done")
+        if (enabled) journal.append("app restarted during this car start: nothing done")
     }
 
     /** Ends this start for good once the window or the attempts are used up. */
@@ -129,7 +160,7 @@ class AebKeeper internal constructor(
         val seen = enabledSeenAt ?: now.also { enabledSeenAt = it }
         if (now - seen <= WINDOW_MS && attempts < MAX_ATTEMPTS) return false
         done = true
-        journal("gave up: attempts=$attempts, car not parked or AEB unreadable")
+        journal.append("gave up: attempts=$attempts, car not parked or AEB unreadable")
         return true
     }
 
@@ -161,10 +192,15 @@ class AebKeeper internal constructor(
             // Only a failed state read uses up an attempt; a car that moved off is simply re-armed.
             if (outcome.result == AebKeepOff.Result.UNREACHABLE) attempts++
         }
-        journal(
+        journal.append(
             "${outcome.result} before=${outcome.before ?: "err"} after=${outcome.after ?: "-"} " +
                 "written=${outcome.written}",
         )
+        when (outcome.result) {
+            AebKeepOff.Result.SWITCHED_OFF, AebKeepOff.Result.ALREADY_OFF -> dot.set(enabled)
+            AebKeepOff.Result.NO_EFFECT -> dot.set(false)
+            else -> Unit
+        }
         if (outcome.result == AebKeepOff.Result.SWITCHED_OFF) runCatching { onSwitchedOff() }
     }
 
@@ -193,16 +229,7 @@ class AebKeeper internal constructor(
     }
 
     /** Newest last. */
-    fun journalLines(): List<String> =
-        prefs.getString(KEY_JOURNAL, "").orEmpty().lines().filter { it.isNotBlank() }
-
-    @Synchronized
-    private fun journal(payload: String) {
-        Log.i(TAG, payload)
-        val ts = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date(wallClock()))
-        val lines = (journalLines() + "$ts $payload").takeLast(MAX_JOURNAL)
-        prefs.edit().putString(KEY_JOURNAL, lines.joinToString("\n")).apply()
-    }
+    fun journalLines(): List<String> = journal.lines()
 
     internal companion object {
         const val TAG = "AebKeeper"
@@ -253,5 +280,74 @@ class AebKeeper internal constructor(
                 else -> AebSend.UNKNOWN
             }
         }
+    }
+}
+
+/** Elapsed (elapsedRealtime) and wall (currentTimeMillis) time; wall is only compared with elapsed to tell a reboot apart. */
+internal class AebClocks(val elapsed: () -> Long, val wall: () -> Long)
+
+/** The widget dot: the AEB state fid read (read only) at most every [REFRESH_MS]. */
+internal class AebDotState(private val reader: AebStateReader) {
+    private val _aebOff = MutableStateFlow(false)
+    val aebOff: StateFlow<Boolean> = _aebOff.asStateFlow()
+    @Volatile private var job: Job? = null
+    private var lastReadAt: Long? = null
+
+    @Volatile private var failures = 0
+
+    fun set(off: Boolean) {
+        _aebOff.value = off
+    }
+
+    /** Switch turned off: no dot, and the next switch-on reads right away. */
+    @Synchronized
+    fun reset() {
+        _aebOff.value = false
+        lastReadAt = null
+        failures = 0
+    }
+
+    /**
+     * [enabled] is re-checked when the read lands, so a switch turned off meanwhile shows no dot.
+     * After [MAX_FAILURES] failed reads in a row the dot goes away: a dot nobody can confirm any
+     * more must not keep saying AEB is off.
+     */
+    @Synchronized
+    fun refreshIfDue(scope: CoroutineScope, now: Long, enabled: () -> Boolean) {
+        if (job?.isActive == true) return
+        if (lastReadAt?.let { now - it < REFRESH_MS } == true) return
+        lastReadAt = now
+        job = scope.launch {
+            val state = runCatching { reader.read() }.getOrNull()?.let { SentinelDecoder.decodeInt(it) }
+            if (state == null) {
+                if (++failures >= MAX_FAILURES) _aebOff.value = false
+                return@launch
+            }
+            failures = 0
+            _aebOff.value = enabled() && state == 0
+        }
+    }
+
+    companion object {
+        const val REFRESH_MS = 30_000L
+        const val MAX_FAILURES = 3
+    }
+}
+
+/** Persistent ring of the keeper's decisions (logcat on DiLink rotates within minutes). */
+internal class AebJournal(private val prefs: SharedPreferences, private val wall: () -> Long) {
+    /** Newest last. */
+    fun lines(): List<String> = prefs.getString(KEY, "").orEmpty().lines().filter { it.isNotBlank() }
+
+    @Synchronized
+    fun append(payload: String) {
+        Log.i(AebKeeper.TAG, payload)
+        val ts = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date(wall()))
+        prefs.edit().putString(KEY, (lines() + "$ts $payload").takeLast(MAX).joinToString("\n")).apply()
+    }
+
+    private companion object {
+        const val KEY = AebKeeper.KEY_JOURNAL
+        const val MAX = AebKeeper.MAX_JOURNAL
     }
 }

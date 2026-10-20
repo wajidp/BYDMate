@@ -208,6 +208,8 @@ object WidgetController {
     private var trashActive = mutableStateOf(false)
     // Continuous voice session (Wave B): drives the snake-border listening indication.
     private var listeningState = mutableStateOf(false)
+    // BYDMate+: AEB-off dot (plus/aeb).
+    private var aebOffState = mutableStateOf(false)
 
     // Expandable-buttons state. expandedState drives the button layer's slide
     // animation; collapsedX/Y remember the window origin so an edge-clamped
@@ -302,6 +304,7 @@ object WidgetController {
                     kind = hybrid.kind,
                     fuelPercent = hybrid.fuelPercent,
                     fuelRangeKm = hybrid.fuelRangeKm,
+                    aebOff = aebOffState.value,
                 )
             }
             setOnTouchListener(WidgetTouchListener(viewCtx, prefs, metrics))
@@ -546,6 +549,7 @@ object WidgetController {
                 Log.w(TAG, "listening subscription failed: ${e.message}")
             }
         }
+        scope.launch { com.bydmate.app.plus.aeb.collectAebOff(appCtx) { aebOffState.value = it } }
     }
 
     @Synchronized

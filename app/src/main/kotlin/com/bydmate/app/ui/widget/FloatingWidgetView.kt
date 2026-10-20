@@ -104,6 +104,8 @@ fun FloatingWidgetView(
     kind: VehicleKind = VehicleKind.EV,
     fuelPercent: Int? = null,
     fuelRangeKm: Int? = null,
+    // BYDMate+: small red dot in the top right corner while AEB is off (plus/aeb).
+    aebOff: Boolean = false,
 ) {
     val showFuel = widgetShowsFuel(kind)
     val status = widgetStatus(soc, voltage12v)
@@ -130,6 +132,7 @@ fun FloatingWidgetView(
     }
 
     CompositionLocalProvider(LocalDensity provides scaledDensity) {
+      Box {
         Column(
             modifier = Modifier
                 .alpha(alpha.coerceIn(0.3f, 1.0f))
@@ -168,6 +171,9 @@ fun FloatingWidgetView(
             WidgetDivider()
             RowService(insideTemp = insideTemp, batTemp = batTemp, voltage12v = voltage12v)
         }
+        // Drawn over the card, inside the border: nothing else moves.
+        if (aebOff) com.bydmate.app.plus.aeb.AebOffDot(Modifier.align(Alignment.TopEnd).alpha(alpha.coerceIn(0.3f, 1.0f)))
+      }
     }
 }
 
