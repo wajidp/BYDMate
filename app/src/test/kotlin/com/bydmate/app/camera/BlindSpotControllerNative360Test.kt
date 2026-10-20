@@ -94,8 +94,13 @@ class BlindSpotControllerNative360Test {
     private fun idle(step: Duration) {
         shadowOf(Looper.getMainLooper()).idleFor(step)
         // The vendor calls run on the camera thread; give it a moment to post back to Main.
-        Thread.sleep(2)
-        shadowOf(Looper.getMainLooper()).idle()
+        // Several short rounds rather than one 2 ms sleep: on a 4-core CI runner the camera
+        // thread's post-back missed a single sleep and the open landed a tick late (every retry).
+        // idle() runs only what is already due, so the extra rounds never advance the clock.
+        repeat(CAMERA_SETTLE_ROUNDS) {
+            Thread.sleep(2)
+            shadowOf(Looper.getMainLooper()).idle()
+        }
     }
 
     /** Ticks the loop, handing every attached window the surface and the frames Robolectric never draws. */
@@ -179,5 +184,7 @@ class BlindSpotControllerNative360Test {
         const val WARM_TICKS = 6
         /** 6 s of the 360 held up, well past the old instant reopen. */
         const val HELD_TICKS = 40
+        /** Sleep+idle rounds per tick for the camera thread's post-back to reach Main. */
+        const val CAMERA_SETTLE_ROUNDS = 10
     }
 }
