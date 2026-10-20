@@ -1,0 +1,198 @@
+# BYDMate+ — keep the fork on top of the latest upstream release and publish it.
+#
+# Every 6 h (or by hand): if AndyShaman/BYDMate has a new release, rebase our own commits
+# (upstream-base..main) onto it. Then, if main differs from our last release, run the same
+# gate as upstream CI plus the unit tests, build a signed APK and publish it as a GitHub
+# release. BYDMate+'s UpdateChecker reads those releases, so the car offers the update.
+#
+# Nothing is pushed or released unless every step passed. A rebase conflict or a red gate
+# opens (or comments on) a "sync-failure" issue instead.
+#
+# Branches: main = upstream release + our commits; upstream-base = the upstream commit main
+# sits on. upstream-base is ours, not derived from upstream history — upstream rewrites its
+# history now and then, and a merge-base would then point at the wrong place.
+#
+# Secrets: FORK_PUSH_TOKEN (fine-grained PAT on this repo: Contents + Workflows read/write —
+# the default token may not push the workflow files a rebase rewrites), KEYSTORE_BASE64,
+# KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD.
+
+name: Sync upstream & release BYDMate+
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Release even when main has not changed since the last release
+        type: boolean
+        default: false
+
+concurrency:
+  group: sync-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+env:
+  UPSTREAM: AndyShaman/BYDMate
+
+jobs:
+  sync-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.FORK_PUSH_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "BYDMate+ bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Rebase onto the latest upstream release
+        id: sync
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=$(gh api "repos/$UPSTREAM/releases/latest" --jq .tag_name)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          git fetch --no-tags "https://github.com/$UPSTREAM.git" "refs/tags/$tag:refs/upstream/$tag"
+          new_base=$(git rev-parse "refs/upstream/$tag^{commit}")
+          old_base=$(git rev-parse origin/upstream-base)
+          echo "old_main=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "new_base=$new_base" >> "$GITHUB_OUTPUT"
+          if [ "$new_base" = "$old_base" ]; then
+            echo "Already on upstream $tag"
+            echo "rebased=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Rebasing $(git rev-list --count "$old_base..HEAD") commit(s) onto upstream $tag"
+          if ! git rebase --onto "$new_base" "$old_base" main; then
+            {
+              echo "Stopped at: $(git log -1 --format='%h %s' REBASE_HEAD 2>/dev/null || echo unknown)"
+              echo "Conflicting files:"
+              git diff --name-only --diff-filter=U | sed 's/^/- /'
+            } > failure-details.txt
+            git rebase --abort
+            exit 1
+          fi
+          echo "rebased=true" >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether to release
+        id: decide
+        run: |
+          set -euo pipefail
+          last=$(git tag --list 'v*.*.*.*' --sort=-v:refname | head -1)
+          if [ -n "$last" ] && [ "$(git rev-parse "$last^{commit}")" = "$(git rev-parse HEAD)" ] \
+             && [ "${{ inputs.force }}" != "true" ]; then
+            echo "main is unchanged since $last — nothing to release"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          ver=$(sed -nE 's/^[[:space:]]*versionName = "([^"]+)".*/\1/p' app/build.gradle.kts | head -1)
+          n=$(git tag --list "v$ver.*" | sed -E "s/^v$ver\.//" | grep -E '^[0-9]+$' | sort -n | tail -1 || true)
+          rev=$(( ${n:-0} + 1 ))
+          echo "Releasing $ver.$rev"
+          echo "release=true" >> "$GITHUB_OUTPUT"
+          echo "ver=$ver" >> "$GITHUB_OUTPUT"
+          echo "rev=$rev" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v5
+        if: steps.decide.outputs.release == 'true'
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v5
+        if: steps.decide.outputs.release == 'true'
+
+      - name: Signing key
+        if: steps.decide.outputs.release == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "$KEYSTORE_BASE64" | base64 -d > app/release.jks
+          # storeFile resolves against app/ (file() in app/build.gradle.kts).
+          printf 'storeFile=release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > keystore.properties
+
+      # Two Gradle calls, and more heap than upstream's 2 GB gradle.properties: in one call the
+      # release compile ran after ~7.6k tests and died with "GC overhead limit exceeded" on the
+      # runner. The heap is raised here, not in gradle.properties, which is upstream's file.
+      - name: Test, lint, detekt
+        if: steps.decide.outputs.release == 'true'
+        run: >
+          ./gradlew :app:testDebugUnitTest :app:lintDebug :app:detekt
+          -PforkRevision=${{ steps.decide.outputs.rev }} --stacktrace
+          "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+          "-Pkotlin.daemon.jvmargs=-Xmx3g"
+
+      - name: Build signed release APK
+        if: steps.decide.outputs.release == 'true'
+        run: >
+          ./gradlew --stop && ./gradlew :app:assembleRelease
+          -PforkRevision=${{ steps.decide.outputs.rev }} --stacktrace
+          "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+          "-Pkotlin.daemon.jvmargs=-Xmx3g"
+
+      - name: Push main and upstream-base
+        if: steps.sync.outputs.rebased == 'true'
+        run: |
+          set -euo pipefail
+          git push --force-with-lease="main:${{ steps.sync.outputs.old_main }}" origin main
+          git push --force origin "${{ steps.sync.outputs.new_base }}:refs/heads/upstream-base"
+
+      - name: Publish release
+        if: steps.decide.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ver="${{ steps.decide.outputs.ver }}.${{ steps.decide.outputs.rev }}"
+          tag="${{ steps.sync.outputs.tag }}"
+          apk=$(ls app/build/outputs/apk/release/BYDMatePlus-v*.apk)
+          {
+            echo "BYDMate+ $ver, built on upstream BYDMate $tag."
+            echo
+            echo "### Only in BYDMate+"
+            git log --reverse --format='- %s' "${{ steps.sync.outputs.new_base }}..HEAD"
+            echo
+            echo "### Upstream $tag"
+            gh release view "$tag" -R "$UPSTREAM" --json body --jq .body
+          } > notes.md
+          gh release create "v$ver" "$apk" --target "$(git rev-parse HEAD)" \
+            --title "BYDMate+ $ver" --notes-file notes.md
+
+      - name: Report failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          {
+            echo "Sync onto upstream **${{ steps.sync.outputs.tag || 'unknown' }}** failed — nothing was pushed or released."
+            echo
+            [ -f failure-details.txt ] && cat failure-details.txt && echo
+            echo "Run: $run_url"
+            echo
+            echo "Fix locally: rebase main onto the upstream tag, resolve, push main and upstream-base, then re-run this workflow."
+          } > issue.md
+          gh label create sync-failure --color B60205 --force >/dev/null
+          open=$(gh issue list --label sync-failure --state open --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body-file issue.md
+          else
+            gh issue create --title "BYDMate+ sync/release failed" --label sync-failure --body-file issue.md
+          fi
