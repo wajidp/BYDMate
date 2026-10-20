@@ -126,6 +126,14 @@ class WriteAllowlist(private val map: Map<String, WriteEntry>) {
         /** Fuel percent (dev=1014, tx=5), raw; diagnostics only. */
         const val FUEL_PERCENT_FID = 1246785600
 
+        /** BYDMate+ AEB (ADAS device). Both third-party DiLink 5.0 tools write these two fids. */
+        const val AEB_DEV = 1038
+        const val AEB_SWITCH_FID = 944767020
+        /** Read back (tx=5): 1 = AEB on, 0 = off. Also written, like both tools do. */
+        const val AEB_STATE_FID = 852492332
+        const val AEB_OFF_ACTION = "aeb_off"
+        const val AEB_STATE_OFF_ACTION = "aeb_state_off"
+
         /**
          * Carve-outs that open only some values of their fid: an entry on such a fid must be a
          * single value from the set, anything else is dropped at load like a banned dev. The drive
@@ -396,6 +404,11 @@ class WriteAllowlist(private val map: Map<String, WriteEntry>) {
             // the car refuses the warm-up on a warm battery.
             WriteEntry("battery_preheat_on",  1009, 1324617774, null, 1, 1, "energy", false, "byd-sdk carsetting ChargingPreheat"),
             WriteEntry("battery_preheat_off", 1009, 1324617774, null, 2, 2, "energy", false, "byd-sdk carsetting ChargingPreheat"),
+            // BYDMate+ AEB keep-off — dev=1038 (ADAS, not banned), value 0 only: these entries
+            // can switch AEB off, never on. No CommandTranslator mapping, so no automation or
+            // voice command reaches them; only AebKeeper writes them. See AebKeeper.
+            WriteEntry(AEB_OFF_ACTION,       AEB_DEV, AEB_SWITCH_FID, null, 0, 0, "safety", false, "saqr + aeb-manager decompile"),
+            WriteEntry(AEB_STATE_OFF_ACTION, AEB_DEV, AEB_STATE_FID,  null, 0, 0, "safety", false, "saqr + aeb-manager decompile"),
             WriteEntry("driver_seat_heat_fallback",    1001, 1125122068, null, 1, 6, "seats", false, "competitor-v80"),
             WriteEntry("driver_seat_vent_fallback",    1001, 1125122064, null, 1, 6, "seats", false, "competitor-v80"),
             WriteEntry("passenger_seat_heat_fallback", 1001, 1125122076, null, 1, 6, "seats", false, "competitor-v80"),

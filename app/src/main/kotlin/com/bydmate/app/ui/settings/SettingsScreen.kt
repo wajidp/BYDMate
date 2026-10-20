@@ -2223,6 +2223,9 @@ private fun ServiceSection(
         }
     }
 
+    // BYDMate+ «Keep AEB off» (fork-only, see plus/aeb).
+    com.bydmate.app.plus.aeb.AebKeepOffCard()
+
     // ADB restore (firmwares that close port 5555 on every reboot). The toggle is shown on
     // every car: where the port survives a reboot the status line simply says so.
     val adbRestore = remember { clusterEntryPoint.adbRestoreManager() }
