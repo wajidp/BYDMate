@@ -318,7 +318,7 @@ class AdbOnDeviceClientImpl @Inject constructor(
         private val SPAWN_TOKEN_REGEX = Regex("""^[A-Za-z0-9]{16,64}$""")
 
         // Helper daemon — hardcoded so neither caller can inject paths/cmdlines.
-        private const val HELPER_PROCESS_NAME = "bydmate_helper"
-        private const val HELPER_LOG_PATH = "/data/local/tmp/bydmate_helper.log"
+        private const val HELPER_PROCESS_NAME = com.bydmate.app.helper.HelperBinderProtocol.PROCESS_NAME
+        private const val HELPER_LOG_PATH = "/data/local/tmp/$HELPER_PROCESS_NAME.log"
     }
 }

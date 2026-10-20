@@ -3578,7 +3578,7 @@ class SplitSessionManagerTest {
         helper.stubLaunch("pkg.wide", "pkg.narrow")
         helper.stubTask("pkg.wide", 10, 5, wide)
         helper.stubTask("pkg.narrow", 11, 5, narrow)
-        coEvery { helper.getTopTask() } returns TopTaskInfo("com.bydmate.app", 50, 1, 1, 0)
+        coEvery { helper.getTopTask() } returns TopTaskInfo(com.bydmate.app.BuildConfig.APPLICATION_ID, 50, 1, 1, 0)
         coEvery { helper.getTopTaskPackage() } returns null
         coEvery { helper.getTopTaskPackageOrSkip() } returns null
 

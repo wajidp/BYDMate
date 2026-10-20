@@ -290,3 +290,6 @@ detekt {
     baseline = file("$rootDir/config/detekt/baseline.xml")
     autoCorrect = false
 }
+
+// BYDMate+ identity and versioning — see app/fork.gradle.
+apply(from = "fork.gradle")

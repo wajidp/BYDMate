@@ -1,0 +1,36 @@
+// BYDMate+ — personal build of AndyShaman/BYDMate. Everything that makes this build its own
+// app lives here, in a file upstream never touches, so a rebase onto a new upstream release
+// conflicts only where upstream code itself moved. Applied at the end of build.gradle.kts.
+//
+// A separate applicationId lets BYDMate+ sit next to the original. The shell-uid helper
+// daemon gets its own name for the same reason: both apps' HelperBootstrap find their daemon
+// by service/process name, and a shared name would have each app see the other's daemon as a
+// version mismatch and kill it, forever. Kept <= 15 chars — the kernel truncates comm there
+// and the kill loop matches ps NAME exactly.
+//
+// Version: upstream's versionName plus a fourth number, the fork revision for that upstream
+// release (4.0.1 -> 4.0.1.1, 4.0.1.2, ...). UpdateChecker.isNewer compares dot-separated
+// integers only, so a suffix like "-w1" would be dropped and every fork build would look
+// equal to the upstream one. versionCode keeps rising across both moves: upstream * 100 + rev.
+
+def forkRevision = (project.findProperty("forkRevision") ?: "1").toString().toInteger()
+assert forkRevision in 1..99 : "forkRevision must be 1..99"
+
+android {
+    defaultConfig {
+        applicationId "com.wajid.bydmate.plus"
+        def upstreamCode = versionCode
+        def upstreamName = versionName
+        versionCode upstreamCode * 100 + forkRevision
+        versionName "${upstreamName}.${forkRevision}"
+        buildConfigField "String", "HELPER_NAME", '"bmplus_helper"'
+        buildConfigField "String", "UPDATE_REPO", '"wajidp/BYDMate"'
+        manifestPlaceholders += [appLabel: "BYDMate+"]
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            output.outputFileName = "BYDMatePlus-v${variant.versionName}.apk"
+        }
+    }
+}

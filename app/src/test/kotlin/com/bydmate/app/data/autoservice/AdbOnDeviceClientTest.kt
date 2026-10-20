@@ -18,6 +18,10 @@ import java.io.IOException
 @Config(sdk = [29])
 class AdbOnDeviceClientTest {
 
+    /** The helper daemon name of this build (app/fork.gradle). */
+    private val helperName = com.bydmate.app.helper.HelperBinderProtocol.PROCESS_NAME
+
+
     private fun newClient(fake: AdbProtocol): AdbOnDeviceClientImpl {
         val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
         val keyStore = AdbKeyStore(ctx)
@@ -204,10 +208,10 @@ class AdbOnDeviceClientTest {
         assertTrue("must contain setsid", cmd.contains("setsid"))
         assertTrue("must contain CLASSPATH=", cmd.contains("CLASSPATH="))
         assertTrue("must contain app_process", cmd.contains("app_process"))
-        assertTrue("must contain --nice-name=bydmate_helper", cmd.contains("--nice-name=bydmate_helper"))
+        assertTrue("must contain --nice-name=$helperName", cmd.contains("--nice-name=$helperName"))
         assertTrue("must contain HelperDaemon class", cmd.contains("com.bydmate.app.helper.HelperDaemon"))
         assertTrue("must contain caller uid", cmd.contains(android.os.Process.myUid().toString()))
-        assertTrue("must redirect to bydmate_helper.log", cmd.contains("bydmate_helper.log"))
+        assertTrue("must redirect to $helperName.log", cmd.contains("$helperName.log"))
 
         // SIGHUP-race fix: the spawning shell must stay alive (poll-loop on the
         // service registry) until the detached app_process has booted and called
@@ -249,8 +253,8 @@ class AdbOnDeviceClientTest {
         // Must select via ps + exact NAME (comm) equality — the discipline helperHeartbeat uses.
         assertTrue("must select via ps -A -o PID,NAME", cmd.contains("ps -A -o PID,NAME"))
         assertTrue(
-            "must match the process NAME exactly (== \"bydmate_helper\")",
-            cmd.contains("\$2==\"bydmate_helper\"")
+            "must match the process NAME exactly (== \"$helperName\")",
+            cmd.contains("\$2==\"$helperName\"")
         )
         assertTrue("must kill -9 the selected pids", cmd.contains("kill -9"))
     }
@@ -302,7 +306,7 @@ class AdbOnDeviceClientTest {
         // there sent HelperBootstrap into kill+respawn on a healthy daemon (#64/#148).
         val fake = FakeProtocol(
             connectResult = true,
-            execResponses = mapOf("ps -A -o NAME" to "init\nbydmate_helper\nzygote"),
+            execResponses = mapOf("ps -A -o NAME" to "init\n$helperName\nzygote"),
         )
         val client = newClient(fake)
 
@@ -323,7 +327,7 @@ class AdbOnDeviceClientTest {
     fun `readHelperLog connects lazily too`() = runTest {
         val fake = FakeProtocol(
             connectResult = true,
-            execResponses = mapOf("cat /data/local/tmp/bydmate_helper.log" to "READY via=broadcast"),
+            execResponses = mapOf("cat /data/local/tmp/$helperName.log" to "READY via=broadcast"),
         )
         val client = newClient(fake)
 
