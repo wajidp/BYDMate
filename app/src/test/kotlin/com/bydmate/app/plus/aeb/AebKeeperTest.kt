@@ -8,6 +8,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.StandardTestDispatcher
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -27,6 +28,7 @@ class AebKeeperTest {
     private var state: Int? = 1
     private val writes = mutableListOf<Pair<String, Int>>()
     private var reads = 0
+    private var stateReads = 0
     private var toasts = 0
     private var send = AebSend.ACCEPTED
     /** Runs inside the state read, i.e. while the attempt is under way. */
@@ -48,9 +50,10 @@ class AebKeeperTest {
             AebStateReader { reads++; duringRead(); state },
             readbackDelayMs = 400,
         ),
+        // The widget dot's own reads, counted apart from the attempt's.
+        AebDotState { stateReads++; state },
         CoroutineScope(dispatcher),
-        { now },
-        { wall },
+        AebClocks({ now }, { wall }),
         { toasts++ },
     )
 
@@ -62,11 +65,13 @@ class AebKeeperTest {
     }
 
     private var km = 12_345.0
+    private var powerStateValue: Int? = 1
 
     private fun snapshot(speed: Int?, gear: Int?) = mockk<DiParsData> {
         every { this@mockk.speed } returns speed
         every { this@mockk.gear } returns gear
         every { mileage } returns km
+        every { this@mockk.powerState } returns powerStateValue
     }
 
     /** One snapshot per second for [seconds]; any attempt it starts runs to the end on virtual time. */
@@ -81,8 +86,56 @@ class AebKeeperTest {
 
     @Test fun `switched off does nothing at all`() {
         poll(30)
-        assertEquals(0, reads)
+        assertEquals(0, reads + stateReads)
         assertEquals(emptyList<Pair<String, Int>>(), writes)
+        assertFalse(keeper.aebOff.value)
+    }
+
+    @Test fun `the widget dot follows the car's AEB state, read every 30 s`() {
+        keeper.enabled = true
+        poll(30)
+        assertTrue("switched off by the attempt", keeper.aebOff.value)
+        state = 1 // the driver switches AEB back on
+        poll(31)
+        assertFalse(keeper.aebOff.value)
+        assertTrue("one read per 30 s, not per poll", stateReads in 2..4)
+        state = 0 // and off again in the car menu
+        poll(31)
+        assertTrue(keeper.aebOff.value)
+        keeper.enabled = false
+        assertFalse(keeper.aebOff.value)
+    }
+
+    @Test fun `one unreadable state keeps the dot, three in a row clear it`() {
+        keeper.enabled = true
+        state = 0
+        poll(30)
+        assertTrue(keeper.aebOff.value)
+        state = null
+        poll(31)
+        assertTrue("one failed read keeps the last answer", keeper.aebOff.value)
+        poll(60)
+        assertFalse("nobody can confirm AEB off any more", keeper.aebOff.value)
+    }
+
+    @Test fun `car off reads and writes nothing`() {
+        keeper.enabled = true
+        powerStateValue = 0
+        poll(120)
+        assertEquals(0, reads + stateReads)
+        assertEquals(emptyList<Pair<String, Int>>(), writes)
+    }
+
+    @Test fun `switching the setting back on reads the dot right away`() {
+        keeper.enabled = true
+        state = 0
+        poll(30)
+        keeper.enabled = false
+        val before = stateReads
+        keeper.enabled = true
+        poll(1)
+        assertEquals(before + 1, stateReads)
+        assertTrue(keeper.aebOff.value)
     }
 
     @Test fun `parked, AEB is switched off once after the car settles`() {
