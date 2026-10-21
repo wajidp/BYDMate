@@ -4,6 +4,7 @@
     <string name="plus_aeb_title">保持 AEB 关闭</string>
     <string name="plus_aeb_desc">每次启动车辆后，BYDMate+ 会在车辆静止时关闭一次自动紧急制动。在下次启动前，您可以在车辆菜单中重新开启 AEB。</string>
     <string name="plus_aeb_last">上次：%1$s</string>
+    <string name="plus_aeb_now">当前：%1$s</string>
     <string name="plus_aeb_confirm_title">安全提示</string>
     <string name="plus_aeb_confirm_body">AEB（自动紧急制动）会在碰撞前自动刹车。保持关闭后，即将发生碰撞时车辆不会自动刹车。\n\n您需自行负责在没有 AEB 的情况下安全驾驶，包括他人驾驶时。</string>
     <string name="plus_aeb_confirm_enable">我已了解，保持关闭</string>

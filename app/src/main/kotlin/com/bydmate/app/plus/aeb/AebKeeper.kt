@@ -108,12 +108,35 @@ class AebKeeper internal constructor(
     private var parkedSince: Long? = null
     private var lastAttemptAt: Long? = null
     private var attempts = 0
+    /** Why this start is over, once it is; shown in [status]. */
+    @Volatile private var doneReason: String? = null
 
+    /** What the keeper is doing right now, for the settings card (English, like the journal). */
+    @Volatile var status: String = "waiting for the car"
+        private set
+
+    /**
+     * Switching it on is also a request for this start: whatever ended it before (a restart mid-drive
+     * while it was off, an earlier result) is forgotten, and AEB goes off once the car is parked.
+     */
     var enabled: Boolean
         get() = prefs.getBoolean(KEY_ENABLED, false)
         set(value) {
+            val wasOn = prefs.getBoolean(KEY_ENABLED, false)
             prefs.edit().putBoolean(KEY_ENABLED, value).apply()
-            if (!value) dot.reset()
+            if (!value) {
+                dot.reset()
+            } else if (!wasOn) {
+                synchronized(this) {
+                    done = false
+                    doneReason = null
+                    attempts = 0
+                    enabledSeenAt = null
+                    lastAttemptAt = null
+                    status = "waiting for P and 0 km/h"
+                }
+                journal.append("switched on: AEB goes off once the car is parked in P")
+            }
         }
 
     /** Called with every poll snapshot by TrackingService. Cheap when the switch is off. */
@@ -131,14 +154,19 @@ class AebKeeper internal constructor(
         if (!parked(data.speed, data.gear)) parkedSince = null
         if (!enabled) {
             dot.reset()
+            status = "switched off"
             return
         }
         // Car reported off (powerState 0): nothing to read or switch. Unknown power state = carry on.
-        if (data.powerState == 0) return
+        if (data.powerState == 0) {
+            status = "car off"
+            return
+        }
         if (mayStartAttempt(now, parked(data.speed, data.gear))) {
             lastAttemptAt = now
             job = scope.launch { attempt() }
         }
+        status = describe(doneReason, job?.isActive == true, data.speed, data.gear, parkedSince != null)
         // Not while an attempt runs: it reports the state itself.
         if (job?.isActive != true) dot.refreshIfDue(scope, now) { enabled }
     }
@@ -152,6 +180,7 @@ class AebKeeper internal constructor(
         firstSnapshot = false
         if (!sameStartAsPreviousProcess(now, mileage)) return
         done = true
+        doneReason = "app restarted mid-drive: nothing until the next car start"
         if (enabled) journal.append("app restarted during this car start: nothing done")
     }
 
@@ -160,6 +189,7 @@ class AebKeeper internal constructor(
         val seen = enabledSeenAt ?: now.also { enabledSeenAt = it }
         if (now - seen <= WINDOW_MS && attempts < MAX_ATTEMPTS) return false
         done = true
+        doneReason = "gave up for this start"
         journal.append("gave up: attempts=$attempts, car not parked or AEB unreadable")
         return true
     }
@@ -188,7 +218,10 @@ class AebKeeper internal constructor(
             AebKeepOff.Outcome(AebKeepOff.Result.UNCONFIRMED, null, null, written = true)
         }
         synchronized(this) {
-            if (outcome.final) done = true
+            if (outcome.final) {
+                done = true
+                doneReason = "done for this start: ${outcome.result}"
+            }
             // Only a failed state read uses up an attempt; a car that moved off is simply re-armed.
             if (outcome.result == AebKeepOff.Result.UNREACHABLE) attempts++
         }
@@ -257,6 +290,24 @@ class AebKeeper internal constructor(
         const val MAX_JOURNAL = 30
 
         fun parked(speed: Int?, gear: Int?): Boolean = speed == 0 && gear == GEAR_P
+
+        /** The settings card's "Now:" line. */
+        fun describe(doneReason: String?, running: Boolean, speed: Int?, gear: Int?, parkedNow: Boolean): String =
+            when {
+                running -> "switching AEB off"
+                doneReason != null -> doneReason
+                parkedNow -> "parked, about to switch AEB off"
+                else -> "waiting for P and 0 km/h (gear ${gearName(gear)}, speed ${speed ?: "unknown"})"
+            }
+
+        private fun gearName(gear: Int?): String = when (gear) {
+            1 -> "P"
+            2 -> "R"
+            3 -> "N"
+            4 -> "D"
+            null -> "unknown"
+            else -> gear.toString()
+        }
 
         /**
          * The allowlisted, audited write path (vehicle_write_log). The cast keeps this fork feature
