@@ -85,6 +85,23 @@ jobs:
           fi
           echo "rebased=true" >> "$GITHUB_OUTPUT"
 
+      - name: English front page from upstream's README.en.md
+        if: steps.sync.outputs.rebased == 'true'
+        run: |
+          set -euo pipefail
+          python3 -I scripts/plus-english-readme.py .
+          if ! git diff --quiet -- .github/README.md; then
+            git add .github/README.md
+            # Folded into the commit that added the page, so the patch stack does not grow per release.
+            first=$(git log --reverse --format=%H "${{ steps.sync.outputs.new_base }}..HEAD" -- .github/README.md | head -1)
+            if [ -n "$first" ]; then
+              git commit --fixup="$first"
+              GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash "${{ steps.sync.outputs.new_base }}"
+            else
+              git commit -m "docs(plus): English front page from upstream README.en.md"
+            fi
+          fi
+
       - name: Decide whether to release
         id: decide
         run: |
