@@ -4,6 +4,7 @@
     <string name="plus_aeb_title">Keep AEB off</string>
     <string name="plus_aeb_desc">After every car start BYDMate+ switches automatic emergency braking off once, while the car stands still. Switching AEB back on in the car menu holds until the next start.</string>
     <string name="plus_aeb_last">Last: %1$s</string>
+    <string name="plus_aeb_now">Now: %1$s</string>
     <string name="plus_aeb_confirm_title">Safety notice</string>
     <string name="plus_aeb_confirm_body">AEB (automatic emergency braking) brakes the car by itself before a collision. With it kept off, the car will not brake by itself when a collision is imminent.\n\nYou are responsible for driving safely without AEB, including when someone else drives.</string>
     <string name="plus_aeb_confirm_enable">I understand, keep it off</string>
