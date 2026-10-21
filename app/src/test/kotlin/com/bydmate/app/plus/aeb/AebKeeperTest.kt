@@ -126,16 +126,43 @@ class AebKeeperTest {
         assertEquals(emptyList<Pair<String, Int>>(), writes)
     }
 
-    @Test fun `switching the setting back on reads the dot right away`() {
+    @Test fun `switching the setting back on re-checks AEB right away, without writing when it is off`() {
         keeper.enabled = true
         state = 0
         poll(30)
         keeper.enabled = false
-        val before = stateReads
+        val readsBefore = reads
+        val dotReadsBefore = stateReads
         keeper.enabled = true
         poll(1)
-        assertEquals(before + 1, stateReads)
+        assertEquals("the re-armed attempt reads once", readsBefore + 1, reads)
+        assertEquals("the attempt reports the state, not the dot", dotReadsBefore, stateReads)
+        assertTrue(lastLine().contains("ALREADY_OFF"))
+        assertEquals(emptyList<Pair<String, Int>>(), writes)
         assertTrue(keeper.aebOff.value)
+    }
+
+    @Test fun `switching on while parked writes once, switching on again writes nothing more`() {
+        keeper.enabled = true
+        poll(10)
+        assertEquals(2, writes.size)
+        keeper.enabled = false
+        keeper.enabled = true
+        poll(30)
+        assertEquals(2, writes.size)
+        assertTrue(lastLine().contains("ALREADY_OFF"))
+    }
+
+    @Test fun `switching off and on during a running attempt sends nothing twice`() {
+        keeper.enabled = true
+        duringRead = {
+            duringRead = {}
+            keeper.enabled = false
+            keeper.enabled = true
+        }
+        poll(30)
+        assertEquals(2, writes.size)
+        assertTrue(keeper.status, keeper.status.contains("done for this start"))
     }
 
     @Test fun `parked, AEB is switched off once after the car settles`() {
@@ -272,6 +299,38 @@ class AebKeeperTest {
         poll(60)
         assertEquals(2, writes.size)
         assertTrue(lastLine().contains("restarted"))
+    }
+
+    @Test fun `switching on mid-drive after a restart acts on this start once parked`() {
+        // The app was updated mid-drive with the switch still off: this start counts as done...
+        poll(30)
+        now += 60_000
+        wall += 60_000
+        keeper = newKeeper()
+        poll(30, speed = 50, gear = D)
+        // ...then the driver switches it on: AEB goes off at the next stop in P.
+        keeper.enabled = true
+        poll(10, speed = 50, gear = D)
+        assertEquals(emptyList<Pair<String, Int>>(), writes)
+        assertTrue(keeper.status, keeper.status.contains("gear D"))
+        poll(10)
+        assertEquals(2, writes.size)
+        assertTrue(keeper.status, keeper.status.contains("SWITCHED_OFF"))
+    }
+
+    @Test fun `the status line says why nothing happens`() {
+        keeper.enabled = true
+        assertTrue(lastLine().contains("switched on"))
+        poll(3, speed = null)
+        assertTrue(keeper.status, keeper.status.contains("speed unknown"))
+        poll(2)
+        assertTrue(keeper.status, keeper.status.contains("parked"))
+        powerStateValue = 0
+        poll(1)
+        assertEquals("car off", keeper.status)
+        keeper.enabled = false
+        poll(1)
+        assertEquals("switched off", keeper.status)
     }
 
     private companion object {

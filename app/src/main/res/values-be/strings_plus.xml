@@ -4,6 +4,7 @@
     <string name="plus_aeb_title">Трымаць AEB выключаным</string>
     <string name="plus_aeb_desc">Пасля кожнага запуску машыны BYDMate+ адзін раз выключае аўтаматычнае экстранае тармажэнне, пакуль машына стаіць. Уключыць AEB назад можна ў меню аўтамабіля — да наступнага запуску.</string>
     <string name="plus_aeb_last">Апошняе: %1$s</string>
+    <string name="plus_aeb_now">Зараз: %1$s</string>
     <string name="plus_aeb_confirm_title">Папярэджанне аб бяспецы</string>
     <string name="plus_aeb_confirm_body">AEB (аўтаматычнае экстранае тармажэнне) само тармозіць машыну перад сутыкненнем. Калі трымаць яго выключаным, пры пагрозе сутыкнення машына не затармозіць сама.\n\nВы самі адказваеце за бяспечнае кіраванне без AEB, у тым ліку калі за рулём хтосьці іншы.</string>
     <string name="plus_aeb_confirm_enable">Разумею, выключаць</string>

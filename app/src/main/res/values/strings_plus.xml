@@ -4,6 +4,7 @@
     <string name="plus_aeb_title">Держать AEB выключенным</string>
     <string name="plus_aeb_desc">После каждого запуска машины BYDMate+ один раз выключает автоматическое экстренное торможение, пока машина стоит. Включить AEB обратно можно в меню автомобиля — до следующего запуска.</string>
     <string name="plus_aeb_last">Последнее: %1$s</string>
+    <string name="plus_aeb_now">Сейчас: %1$s</string>
     <string name="plus_aeb_confirm_title">Предупреждение о безопасности</string>
     <string name="plus_aeb_confirm_body">AEB (автоматическое экстренное торможение) само тормозит машину перед столкновением. Если держать его выключенным, при угрозе столкновения машина не затормозит сама.\n\nВы сами отвечаете за безопасное вождение без AEB, в том числе когда за рулём кто-то другой.</string>
     <string name="plus_aeb_confirm_enable">Понимаю, выключать</string>

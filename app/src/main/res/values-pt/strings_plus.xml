@@ -4,6 +4,7 @@
     <string name="plus_aeb_title">Manter AEB desligado</string>
     <string name="plus_aeb_desc">Após cada partida do carro, o BYDMate+ desliga a frenagem automática de emergência uma vez, com o carro parado. Você pode religar o AEB no menu do carro até a próxima partida.</string>
     <string name="plus_aeb_last">Último: %1$s</string>
+    <string name="plus_aeb_now">Agora: %1$s</string>
     <string name="plus_aeb_confirm_title">Aviso de segurança</string>
     <string name="plus_aeb_confirm_body">O AEB (frenagem automática de emergência) freia o carro sozinho antes de uma colisão. Mantido desligado, o carro não freará sozinho diante de uma colisão iminente.\n\nVocê é responsável por dirigir com segurança sem o AEB, inclusive quando outra pessoa dirige.</string>
     <string name="plus_aeb_confirm_enable">Entendo, manter desligado</string>

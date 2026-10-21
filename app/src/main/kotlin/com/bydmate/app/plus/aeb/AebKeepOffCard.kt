@@ -43,10 +43,12 @@ fun AebKeepOffCard() {
     var enabled by remember { mutableStateOf(keeper.enabled) }
     var confirmOpen by remember { mutableStateOf(false) }
     var last by remember { mutableStateOf(keeper.journalLines().lastOrNull()) }
+    var now by remember { mutableStateOf(keeper.status) }
     // A result can land while the screen is open.
     LaunchedEffect(Unit) {
         while (true) {
             last = keeper.journalLines().lastOrNull()
+            now = keeper.status
             delay(2_000)
         }
     }
@@ -72,6 +74,7 @@ fun AebKeepOffCard() {
                     }
                 },
             )
+            if (enabled) SettingHint(text = stringResource(R.string.plus_aeb_now, now))
             last?.let { SettingHint(text = stringResource(R.string.plus_aeb_last, it)) }
             Spacer(Modifier.height(8.dp))
         }
