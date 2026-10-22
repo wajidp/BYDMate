@@ -13,4 +13,24 @@
     <string name="plus_tg_report_tires_psi">Tires: %1$s psi</string>
     <string name="plus_tyre_psi_title">Tire pressure in psi</string>
     <string name="plus_tyre_psi_desc">Telegram reports show tire pressure in psi with one decimal instead of bar.</string>
+    <string name="plus_upload_title">Upload to BYDMate Cloud</string>
+    <string name="plus_upload_desc">Sends trips, charges, battery snapshots, GPS points, a per-second drive trace and a live sample every 30 s to your BYDMate Cloud server. Read-only: nothing is ever sent to the car.</string>
+    <string name="plus_upload_server_label">Server address</string>
+    <string name="plus_upload_token_label">Device token</string>
+    <string name="plus_upload_token_saved">Token saved — type a new one to replace it</string>
+    <string name="plus_upload_save">Save</string>
+    <string name="plus_upload_sync_now">Sync now</string>
+    <string name="plus_upload_status">Status: %1$s</string>
+    <string name="plus_upload_last_ok">Last sync: %1$s</string>
+    <string name="plus_upload_car">Car: %1$s</string>
+    <string name="plus_upload_backlog">Rows waiting to upload: %1$d</string>
+    <string name="plus_upload_error">Last error: %1$s</string>
+    <string name="plus_upload_state_off">off</string>
+    <string name="plus_upload_state_no_token">no token</string>
+    <string name="plus_upload_state_token_rejected">token rejected — create a new one in the dashboard</string>
+    <string name="plus_upload_state_syncing">syncing…</string>
+    <string name="plus_upload_state_up_to_date">up to date</string>
+    <string name="plus_upload_state_retrying">no connection, retrying later</string>
+    <string name="plus_upload_state_failed">server rejected the request, retrying in an hour</string>
+    <string name="plus_upload_token_invalid">The token contains characters a token cannot have — copy it from the dashboard again.</string>
 </resources>

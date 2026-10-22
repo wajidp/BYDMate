@@ -545,6 +545,9 @@ private fun BatterySection(
 
 @Composable
 private fun IntegrationsSection(state: SettingsUiState, viewModel: SettingsViewModel) {
+    // BYDMate+ «Upload to BYDMate Cloud» (fork-only, see plus/upload).
+    com.bydmate.app.plus.upload.CloudUploadCard()
+
     SectionHeader(text = stringResource(R.string.settings_abrp_section_header))
     Card(
         shape = RoundedCornerShape(12.dp),

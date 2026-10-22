@@ -127,6 +127,7 @@ class TrackingService : Service(), LocationListener {
     @Inject lateinit var fidPushChannel: com.bydmate.app.data.push.FidPushChannel
     @Inject lateinit var blindSpotController: com.bydmate.app.camera.BlindSpotController
     @Inject lateinit var aebKeeper: com.bydmate.app.plus.aeb.AebKeeper
+    @Inject lateinit var cloudUploader: com.bydmate.app.plus.upload.CloudUploader
     @Inject lateinit var clusterMusicBridge: com.bydmate.app.media.ClusterMusicBridge
     @Inject lateinit var logRecorder: com.bydmate.app.diagnostics.LogRecorder
     @Inject lateinit var logTelegramSender: com.bydmate.app.diagnostics.LogTelegramSender
@@ -1539,6 +1540,8 @@ class TrackingService : Service(), LocationListener {
                 .onFailure { Log.w(TAG, "Cold-start reconciliation failed", it) }
 
             sharedAdaptiveLoop.start(serviceScope)
+            // BYDMate+: cloud upload (read-only, own coroutine; see plus/upload).
+            cloudUploader.start(serviceScope)
 
             launch {
                 sharedAdaptiveLoop.connected.collect { connected ->
@@ -1555,6 +1558,7 @@ class TrackingService : Service(), LocationListener {
                     blindSpotController.onPollSnapshot(data)
                     // BYDMate+: never lets a fork bug cut the rest of this tick short.
                     runCatching { aebKeeper.onPollSnapshot(data) }
+                    runCatching { cloudUploader.onPollSnapshot(data, _lastLocation.value) }
                     beltProbeLog.onSnapshot(data)
                     alicePollingManager.latestData = data
                     // Cache for AutoserviceChargingDetector — avoids extra parsReader.fetch() inside runCatchUp.

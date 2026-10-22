@@ -416,6 +416,8 @@ object AppModule {
                 "bydmate.db"
             )
         )
+            // BYDMate+: cloud upload triggers stay out of upstream migrations (see plus/upload).
+            .let { com.bydmate.app.plus.upload.UploadOpenHelper.attach(it) }
             .build()
     }
 

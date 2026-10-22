@@ -604,11 +604,15 @@ class BackupManager(
                 error(strings.get(R.string.backup_error_version_mismatch))
             }
 
+            // BYDMate+: no cloud batch may be in flight while the database is replaced (see plus/upload).
+            com.bydmate.app.plus.upload.UploadRestoreGate.enter(wait = true)
             if (selected == BackupPart.ALL) {
                 // An archive of v3.17.5 or older carries when each rule last fired on the source
                 // device: a later clock there would hold cooldown rules back here.
                 SQLiteDatabase.openDatabase(tmpDbFile.path, null, SQLiteDatabase.OPEN_READWRITE)
                     .use { it.execSQL("UPDATE automation_rules SET last_triggered_at = NULL") }
+                // BYDMate+: this head unit's cloud upload state carries over the swap (see plus/upload).
+                com.bydmate.app.plus.upload.UploadSchema.beforeFullRestore(tmpDbFile, context.getDatabasePath("bydmate.db"))
                 // Under the export lock: an auto backup running at this moment must not
                 // checkpoint or read the database while it is closed and swapped.
                 synchronized(exportLock) { swapIn(tmpDbFile, prefsMap) }
