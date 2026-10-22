@@ -391,6 +391,7 @@ class TelegramReporter @Inject constructor(
             trip2Fuel = if (hybrid) counterFuel(2, trip2) else null,
             tripTariff = tariff,
             currencySymbol = settings.getCurrencySymbol(),
+            tyrePsi = com.bydmate.app.plus.units.PlusTyreUnit.psi(context),
         )
     }
 

@@ -35,6 +35,8 @@ data class ReportInputs(
     /** Price of a kWh for the trip under way (`CostCalculator.tripRateAt`); null or 0 = no cost line. */
     val tripTariff: Double? = null,
     val currencySymbol: String = "",
+    /** BYDMate+: tyre pressure in psi (one decimal) instead of bar. */
+    val tyrePsi: Boolean = false,
 )
 
 /** Litres the recorded trips of a counter burned, over the kilometers of those trips. */
@@ -212,7 +214,7 @@ object TelegramReportBuilder {
             ReportField.ODOMETER -> odometerLine(d?.mileage, strings)
             ReportField.TRIP1, ReportField.TRIP2 -> counterBlock(field, inputs, strings)
             ReportField.TEMPS -> d?.let { tempsLine(it, strings, locale) }?.let { "🌡 ${escape(it)}" }
-            ReportField.TIRES -> d?.let { tiresLine(it, strings, locale) }?.let { "🛞 ${escape(it)}" }
+            ReportField.TIRES -> d?.let { tiresLine(it, strings, locale, inputs.tyrePsi) }?.let { "🛞 ${escape(it)}" }
             ReportField.LOCATION -> locationLine(inputs, lang, strings)
             ReportField.TRIP, ReportField.TRIP_TIME, ReportField.TRIP_KWH, ReportField.TRIP_COST,
             ReportField.OPENINGS -> null
@@ -487,8 +489,9 @@ object TelegramReportBuilder {
     /**
      * «Шины: ПЛ 2,4 · ПП 2,4 · ЗЛ 2,3 · ЗП 2,4 бар» in the order front left, front right, rear left,
      * rear right, as on the «Техника» screen; a wheel without a reading keeps its place as «-».
+     * BYDMate+: psi with one decimal when [ReportInputs.tyrePsi].
      */
-    private fun tiresLine(d: DiParsData, strings: ReportStrings, locale: Locale): String? {
+    private fun tiresLine(d: DiParsData, strings: ReportStrings, locale: Locale, psi: Boolean): String? {
         val wheels = listOf(
             R.string.tg_report_tire_fl to d.tirePressFL,
             R.string.tg_report_tire_fr to d.tirePressFR,
@@ -497,9 +500,10 @@ object TelegramReportBuilder {
         ).map { (label, kpa) -> label to kpa?.takeIf { it > 0 } }
         if (wheels.all { it.second == null }) return null
         val values = wheels.joinToString(" · ") { (label, kpa) ->
-            text(strings, label, kpa?.let { String.format(locale, "%.1f", it / 100.0) } ?: "-")
+            val shown = kpa?.let { com.bydmate.app.plus.units.PlusTyreUnit.shown(it, psi) }
+            text(strings, label, shown?.let { String.format(locale, "%.1f", it) } ?: "-")
         }
-        return text(strings, R.string.tg_report_tires, values)
+        return text(strings, if (psi) R.string.plus_tg_report_tires_psi else R.string.tg_report_tires, values)
     }
 
     /** A string with its arguments, not escaped yet: each line escapes its text once. */

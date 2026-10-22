@@ -10,4 +10,7 @@
     <string name="plus_aeb_confirm_enable">Entendo, manter desligado</string>
     <string name="plus_aeb_confirm_cancel">Cancelar</string>
     <string name="plus_aeb_toast_switched_off">BYDMate+: AEB desligado</string>
+    <string name="plus_tg_report_tires_psi">Pneus: %1$s psi</string>
+    <string name="plus_tyre_psi_title">Pressão dos pneus em psi</string>
+    <string name="plus_tyre_psi_desc">Os relatórios do Telegram mostram a pressão dos pneus em psi com uma casa decimal em vez de bar.</string>
 </resources>
