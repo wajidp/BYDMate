@@ -87,6 +87,8 @@ class BackupManager(
             BlindSpotPreferences.PREFS_NAME,
             SplitPreferencesImpl.PREFS_NAME,
             HudController.PREFS_NAME,
+            // BYDMate+: the Keep AEB off switch (its journal and start marks are excluded below).
+            com.bydmate.app.plus.aeb.AebKeeper.PREFS_NAME,
         )
 
         /** SharedPreferences files carried by a backup. */
@@ -131,6 +133,13 @@ class BackupManager(
             AdbRestorePreferencesImpl.PREFS_NAME to setOf(
                 AdbRestorePreferencesImpl.KEY_LAST_WRITE_NETWORK,
                 AdbRestorePreferencesImpl.KEY_LAST_WRITE_AT,
+            ),
+            // BYDMate+: only the switch travels. The marks of the last start would make the first
+            // start after a restore look like the same drive (odometer moved), so nothing is done.
+            // A restored switch acts from the next car start (restore restarts the app mid-start).
+            com.bydmate.app.plus.aeb.AebKeeper.PREFS_NAME to setOf(
+                com.bydmate.app.plus.aeb.AebKeeper.KEY_JOURNAL,
+                "mark_*",
             ),
             // service_start session of this head unit's boot (#177): another car's boot id and
             // heartbeat would decide whether the first start here fires.
