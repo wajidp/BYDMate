@@ -13,4 +13,24 @@
     <string name="plus_tg_report_tires_psi">Шины: %1$s psi</string>
     <string name="plus_tyre_psi_title">Давление шин в psi</string>
     <string name="plus_tyre_psi_desc">Отчёты в Telegram показывают давление шин в psi с одним знаком после запятой вместо бар.</string>
+    <string name="plus_upload_title">Выгрузка в BYDMate Cloud</string>
+    <string name="plus_upload_desc">Отправляет поездки, зарядки, снимки батареи, точки GPS, посекундную запись поездки и живой снимок раз в 30 с на ваш сервер BYDMate Cloud. Только чтение: в машину ничего не отправляется.</string>
+    <string name="plus_upload_server_label">Адрес сервера</string>
+    <string name="plus_upload_token_label">Токен устройства</string>
+    <string name="plus_upload_token_saved">Токен сохранён — введите новый, чтобы заменить</string>
+    <string name="plus_upload_save">Сохранить</string>
+    <string name="plus_upload_sync_now">Синхронизировать</string>
+    <string name="plus_upload_status">Состояние: %1$s</string>
+    <string name="plus_upload_last_ok">Последняя синхронизация: %1$s</string>
+    <string name="plus_upload_car">Машина: %1$s</string>
+    <string name="plus_upload_backlog">Строк ждут отправки: %1$d</string>
+    <string name="plus_upload_error">Последняя ошибка: %1$s</string>
+    <string name="plus_upload_state_off">выключено</string>
+    <string name="plus_upload_state_no_token">нет токена</string>
+    <string name="plus_upload_state_token_rejected">токен отклонён — создайте новый в панели</string>
+    <string name="plus_upload_state_syncing">синхронизация…</string>
+    <string name="plus_upload_state_up_to_date">всё отправлено</string>
+    <string name="plus_upload_state_retrying">нет связи, повтор позже</string>
+    <string name="plus_upload_state_failed">сервер отклонил запрос, повтор через час</string>
+    <string name="plus_upload_token_invalid">Токен содержит недопустимые символы — скопируйте его из панели ещё раз.</string>
 </resources>

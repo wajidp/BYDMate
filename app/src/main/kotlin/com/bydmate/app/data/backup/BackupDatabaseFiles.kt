@@ -32,6 +32,8 @@ internal object BackupDatabaseFiles {
             tmp.writeBytes(snapshot)
             SQLiteDatabase.openDatabase(tmp.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
                 db.rawQuery("PRAGMA secure_delete=ON", null).use { it.moveToFirst() }
+                // BYDMate+: archives leave without cloud upload triggers (the app recreates them).
+                com.bydmate.app.plus.upload.UploadSchema.beforeExport(db)
                 inTransaction(db) { dropRows(db, parts) }
                 db.execSQL("VACUUM")
                 check(quickCheck(db)) { strings.get(R.string.backup_error_export_integrity) }
@@ -62,6 +64,8 @@ internal object BackupDatabaseFiles {
      */
     fun merge(target: File, archive: File, selected: Set<BackupPart>, strings: AppStrings) {
         SQLiteDatabase.openDatabase(target.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+            // BYDMate+: a partial restore must not turn into cloud deletions (see plus/upload).
+            com.bydmate.app.plus.upload.UploadSchema.beforeMerge(db)
             db.execSQL("ATTACH DATABASE ? AS archive", arrayOf(archive.path))
             inTransaction(db) {
                 selected.forEach { replacePart(db, it) }
@@ -109,6 +113,8 @@ internal object BackupDatabaseFiles {
         check(version >= 1) { strings.get(R.string.backup_error_not_bydmate_db) }
         if (version == AppDatabase.SCHEMA_VERSION) return
         val archiveDb = AppModule.withMigrations(Room.databaseBuilder(context, AppDatabase::class.java, archive.name))
+            // BYDMate+: an archive may carry cloud upload triggers; keep them out of the migration.
+            .let { com.bydmate.app.plus.upload.UploadOpenHelper.attach(it) }
             .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
             .build()
         try {

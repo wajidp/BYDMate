@@ -13,4 +13,24 @@
     <string name="plus_tg_report_tires_psi">Opony: %1$s psi</string>
     <string name="plus_tyre_psi_title">Ciśnienie opon w psi</string>
     <string name="plus_tyre_psi_desc">Raporty w Telegramie pokazują ciśnienie opon w psi z jednym miejscem po przecinku zamiast barów.</string>
+    <string name="plus_upload_title">Wysyłanie do BYDMate Cloud</string>
+    <string name="plus_upload_desc">Wysyła przejazdy, ładowania, migawki baterii, punkty GPS, sekundowy zapis jazdy i próbkę na żywo co 30 s na Twój serwer BYDMate Cloud. Tylko odczyt: do samochodu nic nie jest wysyłane.</string>
+    <string name="plus_upload_server_label">Adres serwera</string>
+    <string name="plus_upload_token_label">Token urządzenia</string>
+    <string name="plus_upload_token_saved">Token zapisany — wpisz nowy, aby go zastąpić</string>
+    <string name="plus_upload_save">Zapisz</string>
+    <string name="plus_upload_sync_now">Synchronizuj teraz</string>
+    <string name="plus_upload_status">Stan: %1$s</string>
+    <string name="plus_upload_last_ok">Ostatnia synchronizacja: %1$s</string>
+    <string name="plus_upload_car">Samochód: %1$s</string>
+    <string name="plus_upload_backlog">Wiersze do wysłania: %1$d</string>
+    <string name="plus_upload_error">Ostatni błąd: %1$s</string>
+    <string name="plus_upload_state_off">wyłączone</string>
+    <string name="plus_upload_state_no_token">brak tokenu</string>
+    <string name="plus_upload_state_token_rejected">token odrzucony — utwórz nowy w panelu</string>
+    <string name="plus_upload_state_syncing">synchronizacja…</string>
+    <string name="plus_upload_state_up_to_date">wszystko wysłane</string>
+    <string name="plus_upload_state_retrying">brak połączenia, ponowna próba później</string>
+    <string name="plus_upload_state_failed">serwer odrzucił żądanie, ponowna próba za godzinę</string>
+    <string name="plus_upload_token_invalid">Token zawiera niedozwolone znaki — skopiuj go ponownie z panelu.</string>
 </resources>

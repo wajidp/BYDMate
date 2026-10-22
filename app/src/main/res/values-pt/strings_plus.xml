@@ -13,4 +13,24 @@
     <string name="plus_tg_report_tires_psi">Pneus: %1$s psi</string>
     <string name="plus_tyre_psi_title">Pressão dos pneus em psi</string>
     <string name="plus_tyre_psi_desc">Os relatórios do Telegram mostram a pressão dos pneus em psi com uma casa decimal em vez de bar.</string>
+    <string name="plus_upload_title">Enviar para o BYDMate Cloud</string>
+    <string name="plus_upload_desc">Envia viagens, carregamentos, instantâneos da bateria, pontos GPS, um registo da condução segundo a segundo e uma amostra ao vivo a cada 30 s para o seu servidor BYDMate Cloud. Só leitura: nada é enviado ao carro.</string>
+    <string name="plus_upload_server_label">Endereço do servidor</string>
+    <string name="plus_upload_token_label">Token do dispositivo</string>
+    <string name="plus_upload_token_saved">Token guardado — escreva um novo para o substituir</string>
+    <string name="plus_upload_save">Guardar</string>
+    <string name="plus_upload_sync_now">Sincronizar agora</string>
+    <string name="plus_upload_status">Estado: %1$s</string>
+    <string name="plus_upload_last_ok">Última sincronização: %1$s</string>
+    <string name="plus_upload_car">Carro: %1$s</string>
+    <string name="plus_upload_backlog">Linhas à espera de envio: %1$d</string>
+    <string name="plus_upload_error">Último erro: %1$s</string>
+    <string name="plus_upload_state_off">desligado</string>
+    <string name="plus_upload_state_no_token">sem token</string>
+    <string name="plus_upload_state_token_rejected">token rejeitado — crie um novo no painel</string>
+    <string name="plus_upload_state_syncing">a sincronizar…</string>
+    <string name="plus_upload_state_up_to_date">tudo enviado</string>
+    <string name="plus_upload_state_retrying">sem ligação, nova tentativa mais tarde</string>
+    <string name="plus_upload_state_failed">o servidor rejeitou o pedido, nova tentativa daqui a uma hora</string>
+    <string name="plus_upload_token_invalid">O token contém caracteres inválidos — copie-o novamente do painel.</string>
 </resources>
