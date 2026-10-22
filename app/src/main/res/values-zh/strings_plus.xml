@@ -2,7 +2,7 @@
 <!-- BYDMate+ only (fork). Kept out of strings.xml so upstream rebases never conflict. -->
 <resources>
     <string name="plus_aeb_title">保持 AEB 关闭</string>
-    <string name="plus_aeb_desc">每次启动车辆后，BYDMate+ 会在车辆静止时关闭一次自动紧急制动。在下次启动前，您可以在车辆菜单中重新开启 AEB。</string>
+    <string name="plus_aeb_desc">每次启动车辆后，BYDMate+ 会在车速低于 10 km/h 时关闭一次自动紧急制动。在下次启动前，您可以在车辆菜单中重新开启 AEB。</string>
     <string name="plus_aeb_last">上次：%1$s</string>
     <string name="plus_aeb_now">当前：%1$s</string>
     <string name="plus_aeb_confirm_title">安全提示</string>

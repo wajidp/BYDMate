@@ -22,10 +22,10 @@ class AebKeepOffTest {
         )
     }
 
-    private val parked = { true }
+    private val slow = { true }
 
     @Test fun `AEB on is switched off with both writes, value 0 only, and confirmed by readback`() = runTest {
-        val out = channel(listOf(1, 0)).apply(parked)
+        val out = channel(listOf(1, 0)).apply(slow)
         assertEquals(AebKeepOff.Result.SWITCHED_OFF, out.result)
         assertEquals(
             listOf(WriteAllowlist.AEB_OFF_ACTION to 0, WriteAllowlist.AEB_STATE_OFF_ACTION to 0),
@@ -35,13 +35,13 @@ class AebKeepOffTest {
     }
 
     @Test fun `AEB already off writes nothing`() = runTest {
-        val out = channel(listOf(0)).apply(parked)
+        val out = channel(listOf(0)).apply(slow)
         assertEquals(AebKeepOff.Result.ALREADY_OFF, out.result)
         assertEquals(emptyList<Pair<String, Int>>(), writes)
     }
 
     @Test fun `an unexpected state value writes nothing`() = runTest {
-        val out = channel(listOf(2)).apply(parked)
+        val out = channel(listOf(2)).apply(slow)
         assertEquals(AebKeepOff.Result.UNKNOWN_STATE, out.result)
         assertEquals(emptyList<Pair<String, Int>>(), writes)
         assertTrue(out.final)
@@ -49,7 +49,7 @@ class AebKeepOffTest {
 
     @Test fun `a failed read or a sentinel writes nothing and may be retried`() = runTest {
         for (raw in listOf(null, 0xFFFF, 0xFFFFF, -10013, -10011)) {
-            val out = channel(listOf(raw)).apply(parked)
+            val out = channel(listOf(raw)).apply(slow)
             assertEquals("raw=$raw", AebKeepOff.Result.UNREACHABLE, out.result)
             assertFalse(out.final)
         }
@@ -60,43 +60,43 @@ class AebKeepOffTest {
         val out = AebKeepOff(
             AebWriter { action, value, _ -> writes += action to value; AebSend.ACCEPTED },
             AebStateReader { error("binder died") },
-        ).apply(parked)
+        ).apply(slow)
         assertEquals(AebKeepOff.Result.UNREACHABLE, out.result)
         assertEquals(emptyList<Pair<String, Int>>(), writes)
     }
 
-    @Test fun `a car that is no longer parked writes nothing and may be retried`() = runTest {
+    @Test fun `a car no longer under the limit writes nothing and may be retried`() = runTest {
         val out = channel(listOf(1)).apply { false }
-        assertEquals(AebKeepOff.Result.NOT_STILL, out.result)
+        assertEquals(AebKeepOff.Result.TOO_FAST, out.result)
         assertEquals(emptyList<Pair<String, Int>>(), writes)
         assertFalse(out.final)
     }
 
     @Test fun `a guard that refuses at the transact sends nothing and may be retried`() = runTest {
         var checks = 0
-        // Parked when the attempt starts, moving by the time the write reaches the transport lock.
+        // Slow when the attempt starts, too fast by the time the write reaches the transport lock.
         val out = channel(listOf(1)).apply { checks++ == 0 }
-        assertEquals(AebKeepOff.Result.NOT_STILL, out.result)
+        assertEquals(AebKeepOff.Result.TOO_FAST, out.result)
         assertEquals(emptyList<Pair<String, Int>>(), writes)
         assertFalse(out.final)
     }
 
     @Test fun `a write with an unknown outcome is final, never retried`() = runTest {
         // A timed-out transact may still have run in the daemon.
-        val out = channel(listOf(1, 1, 1, 1), AebSend.UNKNOWN).apply(parked)
+        val out = channel(listOf(1, 1, 1, 1), AebSend.UNKNOWN).apply(slow)
         assertTrue(out.written)
         assertTrue(out.final)
     }
 
     @Test fun `AEB still on after the writes is no effect`() = runTest {
-        val out = channel(listOf(1)).apply(parked)
+        val out = channel(listOf(1)).apply(slow)
         assertEquals(AebKeepOff.Result.NO_EFFECT, out.result)
         assertTrue(out.written)
         assertTrue(out.final)
     }
 
     @Test fun `an unreadable readback is unconfirmed`() = runTest {
-        val out = channel(listOf(1, null)).apply(parked)
+        val out = channel(listOf(1, null)).apply(slow)
         assertEquals(AebKeepOff.Result.UNCONFIRMED, out.result)
         assertTrue(out.final)
     }

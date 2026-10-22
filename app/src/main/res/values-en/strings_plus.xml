@@ -2,7 +2,7 @@
 <!-- BYDMate+ only (fork). Kept out of strings.xml so upstream rebases never conflict. -->
 <resources>
     <string name="plus_aeb_title">Keep AEB off</string>
-    <string name="plus_aeb_desc">After every car start BYDMate+ switches automatic emergency braking off once, while the car stands still. Switching AEB back on in the car menu holds until the next start.</string>
+    <string name="plus_aeb_desc">After every car start BYDMate+ switches automatic emergency braking off once, as soon as the car is below 10 km/h. Switching AEB back on in the car menu holds until the next start.</string>
     <string name="plus_aeb_last">Last: %1$s</string>
     <string name="plus_aeb_now">Now: %1$s</string>
     <string name="plus_aeb_confirm_title">Safety notice</string>
