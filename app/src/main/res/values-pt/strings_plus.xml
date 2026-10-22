@@ -2,7 +2,7 @@
 <!-- BYDMate+ only (fork). Kept out of strings.xml so upstream rebases never conflict. -->
 <resources>
     <string name="plus_aeb_title">Manter AEB desligado</string>
-    <string name="plus_aeb_desc">Após cada partida do carro, o BYDMate+ desliga a frenagem automática de emergência uma vez, com o carro parado. Você pode religar o AEB no menu do carro até a próxima partida.</string>
+    <string name="plus_aeb_desc">Após cada partida do carro, o BYDMate+ desliga a frenagem automática de emergência uma vez, assim que o carro estiver abaixo de 10 km/h. Você pode religar o AEB no menu do carro até a próxima partida.</string>
     <string name="plus_aeb_last">Último: %1$s</string>
     <string name="plus_aeb_now">Agora: %1$s</string>
     <string name="plus_aeb_confirm_title">Aviso de segurança</string>
