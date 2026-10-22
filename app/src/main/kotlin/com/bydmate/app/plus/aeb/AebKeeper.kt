@@ -43,13 +43,14 @@ import kotlin.math.abs
  * did not move, whatever the gap). A car switched off and on within [SAME_START_GAP_MS] is taken
  * for the same start too: AEB then stays on, the safe side. When unsure, nothing is written.
  *
- * [AebKeepOff] runs only while the car is parked — gear P and speed 0 on the poll the service
- * already makes, held for [SETTLE_MS] — and every write re-checks that against the freshest
- * snapshot right before its transact, so a car that pulls away while the attempt queues is never
- * written. No extra read of any other device is added. It acts once: a final outcome ends it for
- * this start and nothing watches AEB afterwards. Only an attempt that sent nothing (state
- * unreadable, car no longer parked) is tried again, every [RETRY_MS], within [WINDOW_MS] of the
- * switch being seen on.
+ * [AebKeepOff] runs on the first poll that shows the car below [MAX_SPEED_KMH] — the limit the
+ * factory menu itself keeps for switching AEB, in any gear — and every write re-checks that right
+ * before its transact against the poll (no older than [SNAPSHOT_FRESH_MS]) and the live speed the fid
+ * push channel lays into the service snapshot. Without speed pushes the check is only as fresh as the
+ * poll, hence the short freshness window. Unknown speed = no write. The gear is not looked at. No extra read of any other
+ * device is added. It acts once: a final outcome ends it for this start and nothing watches AEB
+ * afterwards. Only an attempt that sent nothing (state unreadable, car too fast by the write) is
+ * tried again, every [RETRY_MS], within [WINDOW_MS] of the switch being seen on.
  *
  * Decisions go to a small persistent ring ([journalLines]), shown on the settings card, since
  * logcat on DiLink is gone within minutes.
@@ -100,12 +101,15 @@ class AebKeeper internal constructor(
     @Volatile private var done = false
     @Volatile private var job: Job? = null
     @Volatile private var lastSpeed: Int? = null
-    @Volatile private var lastGear: Int? = null
     @Volatile private var lastSnapshotAt: Long? = null
+    /** Why [mayWrite] last refused, for the journal. */
+    @Volatile private var refusal: String? = null
+
+    /** The service's live snapshot speed: the poll, patched by fid pushes between ticks. */
+    internal var liveSpeed: () -> Int? = { com.bydmate.app.service.TrackingService.lastData.value?.speed }
     private var firstSnapshot = true
     private var lastMarkAt: Long? = null
     private var enabledSeenAt: Long? = null
-    private var parkedSince: Long? = null
     private var lastAttemptAt: Long? = null
     private var attempts = 0
     /** Why this start is over, once it is; shown in [status]. */
@@ -117,7 +121,7 @@ class AebKeeper internal constructor(
 
     /**
      * Switching it on is also a request for this start: whatever ended it before (a restart mid-drive
-     * while it was off, an earlier result) is forgotten, and AEB goes off once the car is parked.
+     * while it was off, an earlier result) is forgotten, and AEB goes off once the car is slow enough.
      */
     var enabled: Boolean
         get() = prefs.getBoolean(KEY_ENABLED, false)
@@ -133,9 +137,9 @@ class AebKeeper internal constructor(
                     attempts = 0
                     enabledSeenAt = null
                     lastAttemptAt = null
-                    status = "waiting for P and 0 km/h"
+                    status = "waiting for under $MAX_SPEED_KMH km/h"
                 }
-                journal.append("switched on: AEB goes off once the car is parked in P")
+                journal.append("switched on: AEB goes off once the car is under $MAX_SPEED_KMH km/h")
             }
         }
 
@@ -144,14 +148,11 @@ class AebKeeper internal constructor(
     fun onPollSnapshot(data: DiParsData) {
         val now = clock()
         lastSpeed = data.speed
-        lastGear = data.gear
         lastSnapshotAt = now
         if (firstSnapshot) onFirstSnapshot(now, data.mileage)
         // Not while the car reports off: a process that outlives car off must not make the next
         // real start look like the same drive.
         if (data.powerState != 0) markAlive(now, data.mileage)
-        // Kept current while an attempt runs, so a retry after the car moved settles again first.
-        if (!parked(data.speed, data.gear)) parkedSince = null
         if (!enabled) {
             dot.reset()
             status = "switched off"
@@ -162,18 +163,18 @@ class AebKeeper internal constructor(
             status = "car off"
             return
         }
-        if (mayStartAttempt(now, parked(data.speed, data.gear))) {
+        if (mayStartAttempt(now, slow(data.speed))) {
             lastAttemptAt = now
             job = scope.launch { attempt() }
         }
-        status = describe(doneReason, job?.isActive == true, data.speed, data.gear, parkedSince != null)
+        status = describe(doneReason, job?.isActive == true, data.speed)
         // Not while an attempt runs: it reports the state itself.
         if (job?.isActive != true) dot.refreshIfDue(scope, now) { enabled }
     }
 
-    private fun mayStartAttempt(now: Long, parkedNow: Boolean): Boolean {
+    private fun mayStartAttempt(now: Long, slowNow: Boolean): Boolean {
         if (done || job?.isActive == true) return false
-        return !outOfTries(now) && readyToTry(now, parkedNow)
+        return !outOfTries(now) && readyToTry(now, slowNow)
     }
 
     private fun onFirstSnapshot(now: Long, mileage: Double?) {
@@ -190,25 +191,33 @@ class AebKeeper internal constructor(
         if (now - seen <= WINDOW_MS && attempts < MAX_ATTEMPTS) return false
         done = true
         doneReason = "gave up for this start"
-        journal.append("gave up: attempts=$attempts, car not parked or AEB unreadable")
+        journal.append("gave up: attempts=$attempts, car too fast or AEB unreadable")
         return true
     }
 
-    /** Parked for [SETTLE_MS], and [RETRY_MS] since the last attempt. */
-    private fun readyToTry(now: Long, parkedNow: Boolean): Boolean {
-        if (!parkedNow) {
-            parkedSince = null
-            return false
-        }
-        val since = parkedSince ?: now.also { parkedSince = it }
-        if (now - since < SETTLE_MS) return false
+    /** Below [MAX_SPEED_KMH] now, and [RETRY_MS] since the last attempt. */
+    private fun readyToTry(now: Long, slowNow: Boolean): Boolean {
+        if (!slowNow) return false
         return lastAttemptAt?.let { now - it >= RETRY_MS } ?: true
     }
 
-    /** Still allowed to write right now: switched on, and the freshest snapshot is parked. */
+    /**
+     * Still allowed to write right now: switched on, a fresh poll below the limit, and the live
+     * speed below it too. The poll may be up to a tick old (5 s at a standstill), so a car that
+     * pulled away since would still look slow there; [liveSpeed] carries the fid push the service
+     * already receives, no extra read. Why it refused goes to the journal line.
+     */
     private fun mayWrite(): Boolean {
-        val at = lastSnapshotAt ?: return false
-        return enabled && clock() - at <= SNAPSHOT_FRESH_MS && parked(lastSpeed, lastGear)
+        val at = lastSnapshotAt
+        val live = runCatching { liveSpeed() }.getOrNull()
+        refusal = when {
+            !enabled -> "switched off"
+            at == null || clock() - at > SNAPSHOT_FRESH_MS -> "no fresh poll"
+            !slow(lastSpeed) -> "speed ${lastSpeed ?: "unknown"}"
+            !slow(live) -> "live speed ${live ?: "unknown"}"
+            else -> null
+        }
+        return refusal == null
     }
 
     private suspend fun attempt() {
@@ -221,12 +230,14 @@ class AebKeeper internal constructor(
             if (outcome.final) {
                 done = true
                 doneReason = "done for this start: ${outcome.result}"
+                status = doneReason.orEmpty()
             }
-            // Only a failed state read uses up an attempt; a car that moved off is simply re-armed.
+            // Only a failed state read uses up an attempt; a car too fast is simply re-armed.
             if (outcome.result == AebKeepOff.Result.UNREACHABLE) attempts++
         }
+        val why = refusal.takeIf { outcome.result == AebKeepOff.Result.TOO_FAST }?.let { " ($it)" }.orEmpty()
         journal.append(
-            "${outcome.result} before=${outcome.before ?: "err"} after=${outcome.after ?: "-"} " +
+            "${outcome.result}$why before=${outcome.before ?: "err"} after=${outcome.after ?: "-"} " +
                 "written=${outcome.written}",
         )
         when (outcome.result) {
@@ -272,15 +283,14 @@ class AebKeeper internal constructor(
         const val KEY_MARK_ELAPSED = "mark_elapsed"
         const val KEY_MARK_WALL = "mark_wall"
         const val KEY_MARK_KM = "mark_km"
-        /** gear: 1 = P (DiParsData). */
-        const val GEAR_P = 1
-        const val SETTLE_MS = 5_000L
+        /** The factory menu lets AEB be switched only below this speed; we keep the same limit. */
+        const val MAX_SPEED_KMH = 10
         const val RETRY_MS = 10_000L
         /** Failed state reads allowed per start; the daemon may take a while after a cold boot. */
         const val MAX_ATTEMPTS = 30
         const val WINDOW_MS = 10 * 60_000L
         /** A write is refused when the newest snapshot is older than this. */
-        const val SNAPSHOT_FRESH_MS = 10_000L
+        const val SNAPSHOT_FRESH_MS = 3_000L
         /** The previous process's last poll closer than this = the same car start. */
         const val SAME_START_GAP_MS = 120_000L
         /** Odometer moved more than this since the previous process's mark = it was driving. */
@@ -289,25 +299,16 @@ class AebKeeper internal constructor(
         const val CLOCK_TOLERANCE_MS = 5_000L
         const val MAX_JOURNAL = 30
 
-        fun parked(speed: Int?, gear: Int?): Boolean = speed == 0 && gear == GEAR_P
+        /** Known speed below [MAX_SPEED_KMH], any gear. Unknown speed is never slow enough. */
+        fun slow(speed: Int?): Boolean = speed != null && speed in 0 until MAX_SPEED_KMH
 
         /** The settings card's "Now:" line. */
-        fun describe(doneReason: String?, running: Boolean, speed: Int?, gear: Int?, parkedNow: Boolean): String =
+        fun describe(doneReason: String?, running: Boolean, speed: Int?): String =
             when {
                 running -> "switching AEB off"
                 doneReason != null -> doneReason
-                parkedNow -> "parked, about to switch AEB off"
-                else -> "waiting for P and 0 km/h (gear ${gearName(gear)}, speed ${speed ?: "unknown"})"
+                else -> "waiting for under $MAX_SPEED_KMH km/h (speed ${speed ?: "unknown"})"
             }
-
-        private fun gearName(gear: Int?): String = when (gear) {
-            1 -> "P"
-            2 -> "R"
-            3 -> "N"
-            4 -> "D"
-            null -> "unknown"
-            else -> gear.toString()
-        }
 
         /**
          * The allowlisted, audited write path (vehicle_write_log). The cast keeps this fork feature

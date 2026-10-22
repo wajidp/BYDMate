@@ -55,7 +55,12 @@ class AebKeeperTest {
         CoroutineScope(dispatcher),
         AebClocks({ now }, { wall }),
         { toasts++ },
-    )
+    ).also { it.liveSpeed = { if (liveUnknown) null else liveOverride ?: polledSpeed } }
+
+    /** The service's live speed follows the last poll unless a test pushes something else. */
+    private var polledSpeed: Int? = null
+    private var liveOverride: Int? = null
+    private var liveUnknown = false
 
     private var keeper = newKeeper()
 
@@ -75,7 +80,9 @@ class AebKeeperTest {
     }
 
     /** One snapshot per second for [seconds]; any attempt it starts runs to the end on virtual time. */
-    private fun poll(seconds: Int, speed: Int? = 0, gear: Int? = P) = repeat(seconds) {
+    /** Gear D by default: the gear must not matter. */
+    private fun poll(seconds: Int, speed: Int? = 0, gear: Int? = D) = repeat(seconds) {
+        polledSpeed = speed
         keeper.onPollSnapshot(snapshot(speed, gear))
         dispatcher.scheduler.advanceUntilIdle()
         now += 1_000
@@ -142,7 +149,7 @@ class AebKeeperTest {
         assertTrue(keeper.aebOff.value)
     }
 
-    @Test fun `switching on while parked writes once, switching on again writes nothing more`() {
+    @Test fun `switching on while slow writes once, switching on again writes nothing more`() {
         keeper.enabled = true
         poll(10)
         assertEquals(2, writes.size)
@@ -165,10 +172,10 @@ class AebKeeperTest {
         assertTrue(keeper.status, keeper.status.contains("done for this start"))
     }
 
-    @Test fun `parked, AEB is switched off once after the car settles`() {
+    @Test fun `AEB is switched off on the first slow poll, once`() {
         keeper.enabled = true
-        poll(5)
-        assertEquals("nothing before the car has been parked for 5 s", 0, reads)
+        poll(1)
+        assertEquals("no waiting: the first poll under 10 km/h acts", 2, writes.size)
         poll(30)
         assertEquals(2, writes.size)
         assertEquals(1, toasts)
@@ -178,32 +185,65 @@ class AebKeeperTest {
         assertEquals(2, writes.size)
     }
 
-    @Test fun `a moving car is never written`() {
+    @Test fun `10 km per h and over is never written`() {
         keeper.enabled = true
-        poll(120, speed = 40, gear = D)
+        poll(60, speed = 10, gear = D)
+        poll(60, speed = 40, gear = D)
         assertEquals(0, reads)
     }
 
-    @Test fun `standing in D at a light is not parked`() {
-        keeper.enabled = true
-        poll(120, speed = 0, gear = D)
-        assertEquals(0, reads)
-    }
-
-    @Test fun `unknown speed or gear is not parked`() {
-        keeper.enabled = true
-        poll(30, speed = null)
-        poll(30, gear = null)
-        assertEquals(0, reads)
-    }
-
-    @Test fun `a stop that is too short resets the settle time`() {
-        keeper.enabled = true
-        repeat(10) {
-            poll(4)
-            poll(1, speed = 5, gear = D)
+    @Test fun `the gear does not matter under 10 km per h`() {
+        for (gear in listOf(P, null)) {
+            prefs.edit().clear().commit()
+            writes.clear()
+            state = 1
+            keeper = newKeeper()
+            keeper.enabled = true
+            poll(1, speed = 9, gear = gear)
+            assertEquals("gear=$gear", 2, writes.size)
         }
+    }
+
+    @Test fun `the speed limit is strict and needs a known, non-negative speed`() {
+        assertFalse(AebKeeper.slow(null))
+        assertFalse(AebKeeper.slow(-1))
+        assertTrue(AebKeeper.slow(0))
+        assertTrue(AebKeeper.slow(9))
+        assertFalse(AebKeeper.slow(10))
+    }
+
+    @Test fun `an unknown live speed is not written, whatever the poll says`() {
+        keeper.enabled = true
+        liveUnknown = true
+        poll(1)
+        assertEquals(emptyList<Pair<String, Int>>(), writes)
+        assertTrue(lastLine(), lastLine().contains("TOO_FAST (live speed unknown)"))
+    }
+
+    @Test fun `a car that pulled away since the last poll is not written`() {
+        keeper.enabled = true
+        // The poll still says 0, the pushed live speed already says 25.
+        liveOverride = 25
+        poll(1)
+        assertEquals(emptyList<Pair<String, Int>>(), writes)
+        assertTrue(lastLine(), lastLine().contains("TOO_FAST (live speed 25)"))
+        liveOverride = null
+        poll(30)
+        assertEquals(2, writes.size)
+    }
+
+    @Test fun `unknown speed is never written`() {
+        keeper.enabled = true
+        poll(60, speed = null)
         assertEquals(0, reads)
+    }
+
+    @Test fun `already over the limit at start, it acts at the first slow moment`() {
+        keeper.enabled = true
+        poll(20, speed = 30, gear = D)
+        assertEquals(0, reads)
+        poll(1, speed = 5, gear = D)
+        assertEquals(2, writes.size)
     }
 
     @Test fun `the car pulling away during the attempt stops the write`() {
@@ -211,8 +251,8 @@ class AebKeeperTest {
         duringRead = { keeper.onPollSnapshot(snapshot(10, D)) }
         poll(10)
         assertEquals(emptyList<Pair<String, Int>>(), writes)
-        assertTrue(lastLine().contains("NOT_STILL"))
-        // Parked again later: tried again, and this time it goes through.
+        assertTrue(lastLine().contains("TOO_FAST"))
+        // Slow again later: tried again, and this time it goes through.
         duringRead = {}
         poll(30)
         assertEquals(2, writes.size)
@@ -301,19 +341,19 @@ class AebKeeperTest {
         assertTrue(lastLine().contains("restarted"))
     }
 
-    @Test fun `switching on mid-drive after a restart acts on this start once parked`() {
+    @Test fun `switching on mid-drive after a restart acts on this start once slow`() {
         // The app was updated mid-drive with the switch still off: this start counts as done...
         poll(30)
         now += 60_000
         wall += 60_000
         keeper = newKeeper()
         poll(30, speed = 50, gear = D)
-        // ...then the driver switches it on: AEB goes off at the next stop in P.
+        // ...then the driver switches it on: AEB goes off at the next moment under 10 km/h.
         keeper.enabled = true
         poll(10, speed = 50, gear = D)
         assertEquals(emptyList<Pair<String, Int>>(), writes)
-        assertTrue(keeper.status, keeper.status.contains("gear D"))
-        poll(10)
+        assertTrue(keeper.status, keeper.status.contains("speed 50"))
+        poll(1, speed = 8, gear = D)
         assertEquals(2, writes.size)
         assertTrue(keeper.status, keeper.status.contains("SWITCHED_OFF"))
     }
@@ -323,8 +363,8 @@ class AebKeeperTest {
         assertTrue(lastLine().contains("switched on"))
         poll(3, speed = null)
         assertTrue(keeper.status, keeper.status.contains("speed unknown"))
-        poll(2)
-        assertTrue(keeper.status, keeper.status.contains("parked"))
+        poll(1, speed = 20)
+        assertTrue(keeper.status, keeper.status.contains("under 10 km/h (speed 20)"))
         powerStateValue = 0
         poll(1)
         assertEquals("car off", keeper.status)

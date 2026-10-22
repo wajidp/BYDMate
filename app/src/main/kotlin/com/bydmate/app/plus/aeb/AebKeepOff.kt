@@ -30,7 +30,7 @@ fun interface AebWriter {
  * 852492332 back, 1 = on, 0 = off. Neither has been validated on this car yet, so the state read
  * decides what happens:
  *  - read failed or a sentinel → UNREACHABLE, nothing written (retryable)
- *  - [guard] false (car moving, switch turned off) → NOT_STILL, nothing written (retryable)
+ *  - [guard] false (car at or over the speed limit, switch turned off) → TOO_FAST, nothing written (retryable)
  *  - 0                         → ALREADY_OFF, nothing written
  *  - any value other than 1    → UNKNOWN_STATE, nothing written (not the encoding we expect)
  *  - 1 → both writes, then read back: 0 → SWITCHED_OFF, still 1 → NO_EFFECT, else UNCONFIRMED
@@ -43,12 +43,12 @@ class AebKeepOff(
     private val reader: AebStateReader,
     private val readbackDelayMs: Long = READBACK_DELAY_MS,
 ) {
-    enum class Result { SWITCHED_OFF, ALREADY_OFF, NO_EFFECT, UNCONFIRMED, UNKNOWN_STATE, UNREACHABLE, NOT_STILL }
+    enum class Result { SWITCHED_OFF, ALREADY_OFF, NO_EFFECT, UNCONFIRMED, UNKNOWN_STATE, UNREACHABLE, TOO_FAST }
 
     /** [before]/[after] are the raw state reads (null = failed), [written] whether a write may have been sent. */
     data class Outcome(val result: Result, val before: Int?, val after: Int?, val written: Boolean) {
         /** False only when nothing was sent and another try later is safe. */
-        val final: Boolean get() = result != Result.UNREACHABLE && result != Result.NOT_STILL
+        val final: Boolean get() = result != Result.UNREACHABLE && result != Result.TOO_FAST
     }
 
     suspend fun apply(guard: () -> Boolean): Outcome {
@@ -57,10 +57,10 @@ class AebKeepOff(
             ?: return Outcome(Result.UNREACHABLE, before, null, written = false)
         if (state == STATE_OFF) return Outcome(Result.ALREADY_OFF, before, null, written = false)
         if (state != STATE_ON) return Outcome(Result.UNKNOWN_STATE, before, null, written = false)
-        if (!guard()) return Outcome(Result.NOT_STILL, before, null, written = false)
+        if (!guard()) return Outcome(Result.TOO_FAST, before, null, written = false)
 
         if (writer.write(WriteAllowlist.AEB_OFF_ACTION, STATE_OFF, guard) == AebSend.REFUSED) {
-            return Outcome(Result.NOT_STILL, before, null, written = false)
+            return Outcome(Result.TOO_FAST, before, null, written = false)
         }
         // From here the attempt is final. A refused second write (the car just moved) is left out;
         // the readback says what the car ended up with.

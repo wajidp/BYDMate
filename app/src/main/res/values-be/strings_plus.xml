@@ -2,7 +2,7 @@
 <!-- BYDMate+ only (fork). Kept out of strings.xml so upstream rebases never conflict. -->
 <resources>
     <string name="plus_aeb_title">Трымаць AEB выключаным</string>
-    <string name="plus_aeb_desc">Пасля кожнага запуску машыны BYDMate+ адзін раз выключае аўтаматычнае экстранае тармажэнне, пакуль машына стаіць. Уключыць AEB назад можна ў меню аўтамабіля — да наступнага запуску.</string>
+    <string name="plus_aeb_desc">Пасля кожнага запуску машыны BYDMate+ адзін раз выключае аўтаматычнае экстранае тармажэнне, калі хуткасць ніжэй за 10 км/г. Уключыць AEB назад можна ў меню аўтамабіля — да наступнага запуску.</string>
     <string name="plus_aeb_last">Апошняе: %1$s</string>
     <string name="plus_aeb_now">Зараз: %1$s</string>
     <string name="plus_aeb_confirm_title">Папярэджанне аб бяспецы</string>
