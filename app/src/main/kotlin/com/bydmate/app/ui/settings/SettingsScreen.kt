@@ -2866,6 +2866,8 @@ private fun AutoBackupRows(state: SettingsUiState, viewModel: SettingsViewModel)
     SettingDivider()
     PowerOffReportRows(state, viewModel, tokenFocus, botBringer)
     SettingDivider()
+    com.bydmate.app.plus.units.PlusTyreUnitRow()
+    SettingDivider()
     // Needs the bot above too; the link to connect it already sits under the power-off report.
     val connected = state.tgBackupBinding != null
     SettingToggleRow(

@@ -10,4 +10,7 @@
     <string name="plus_aeb_confirm_enable">Разумею, выключаць</string>
     <string name="plus_aeb_confirm_cancel">Адмена</string>
     <string name="plus_aeb_toast_switched_off">BYDMate+: AEB выключана</string>
+    <string name="plus_tg_report_tires_psi">Шыны: %1$s psi</string>
+    <string name="plus_tyre_psi_title">Ціск у шынах у psi</string>
+    <string name="plus_tyre_psi_desc">Справаздачы ў Telegram паказваюць ціск у шынах у psi з адным знакам пасля коскі замест бар.</string>
 </resources>

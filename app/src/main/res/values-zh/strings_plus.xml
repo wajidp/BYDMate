@@ -10,4 +10,7 @@
     <string name="plus_aeb_confirm_enable">我已了解，保持关闭</string>
     <string name="plus_aeb_confirm_cancel">取消</string>
     <string name="plus_aeb_toast_switched_off">BYDMate+：AEB 已关闭</string>
+    <string name="plus_tg_report_tires_psi">胎压：%1$s psi</string>
+    <string name="plus_tyre_psi_title">胎压以 psi 显示</string>
+    <string name="plus_tyre_psi_desc">Telegram 报告以 psi（保留一位小数）而不是 bar 显示胎压。</string>
 </resources>

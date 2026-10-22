@@ -384,6 +384,7 @@ class TelegramReporter @Inject constructor(
             hybrid = hybrid,
             trip1Fuel = if (hybrid) counterFuel(1, trip1) else null,
             trip2Fuel = if (hybrid) counterFuel(2, trip2) else null,
+            tyrePsi = com.bydmate.app.plus.units.PlusTyreUnit.psi(context),
         )
     }
 
