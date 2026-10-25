@@ -21,7 +21,7 @@ class HybridProbeDiagnosticsTest {
         }
     }
 
-    @Test fun `the table holds the fourteen probed addresses`() {
+    @Test fun `the table holds the probed addresses`() {
         assertEquals(
             listOf(
                 "engine_rpm" to 339738642,
@@ -38,12 +38,22 @@ class HybridProbeDiagnosticsTest {
                 "fuel_tank_cap" to 1336934422,
                 "ev_range_km" to 1246765118,
                 "elec_phm" to 1032863794,
+                "soc_target_dr" to 873463848,
+                "soc_target_dr_f" to 873463848,
+                "soc_target_stat" to 1083191348,
+                "soc_target_stat_f" to 1083191348,
+                "has_soc_target" to 130532,
+                "soc_now" to 1246777400,
+                "save_memory_state" to 1175453710,
             ),
             HybridProbeDiagnostics.FIDS.map { it.name to it.fid },
         )
         assertEquals(
-            "the four consumption fids are float reads",
-            listOf("fuel_instant", "fuel_total", "fuel_avg_phm", "elec_phm"),
+            "the consumption fids and the float twins of the SOC probes are float reads",
+            listOf(
+                "fuel_instant", "fuel_total", "fuel_avg_phm", "elec_phm",
+                "soc_target_dr_f", "soc_target_stat_f", "soc_now",
+            ),
             HybridProbeDiagnostics.FIDS.filter { it.tx == 7 }.map { it.name },
         )
     }
