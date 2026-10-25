@@ -29,6 +29,7 @@ internal object UploadSamples {
         nonNegative(d.engineRpm)?.let { put("rpm", it) }
         inRange(d.soc, SOC_MAX)?.let { put("soc", it) }
         putHybrid(d, socTarget)
+        putPowertrain(d)
         putFix(fix)
     }
 
@@ -47,6 +48,8 @@ internal object UploadSamples {
         tyres(d)?.let { put("tyres", it) }
         putHybrid(d, socTarget)
         d.fuelRangeKm?.takeIf { it >= 0 }?.let { put("fuel_range_km", it) }
+        putPowertrain(d)
+        putFuelTotal(d)
         putFix(fix)
     }
 
