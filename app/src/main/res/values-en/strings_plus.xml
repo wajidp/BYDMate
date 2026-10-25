@@ -33,4 +33,13 @@
     <string name="plus_upload_state_retrying">no connection, retrying later</string>
     <string name="plus_upload_state_failed">server rejected the request, retrying in an hour</string>
     <string name="plus_upload_token_invalid">The token contains characters a token cannot have — copy it from the dashboard again.</string>
+    <string name="plus_diag_title">Diagnostic dump</string>
+    <string name="plus_diag_desc">Sends the technical header of your latest log recording (device, settings, probes, crash log) to your cloud: no logcat, and no voice commands, navigation, rules, music or list of apps you used. Record a log first under log capture.</string>
+    <string name="plus_diag_button">Upload last dump</string>
+    <string name="plus_diag_sending">Uploading…</string>
+    <string name="plus_diag_sent">Sent %1$s</string>
+    <string name="plus_diag_not_ready">Turn on the upload, save the token and sync once first.</string>
+    <string name="plus_diag_no_dump">No log recording found in Downloads — start and stop one first.</string>
+    <string name="plus_diag_no_header">That file has no diagnostic header.</string>
+    <string name="plus_diag_failed">Upload failed: %1$s</string>
 </resources>

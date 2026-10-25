@@ -114,6 +114,16 @@ class CloudUploader internal constructor(
 
     internal val settingsForUi: UploadSettings get() = settings
 
+    /** The owner pressed «upload last diagnostic dump». Blocking: call from Dispatchers.IO. */
+    internal fun uploadDiagnostics(dirs: List<File>): DiagnosticOutcome {
+        if (UploadRestoreGate.restoring || !settings.enabled) return DiagnosticOutcome.NotReady
+        // The upload database is read under the restore gate's lock, like every batch.
+        val databaseId = UploadRestoreGate.lock.withLock {
+            if (UploadRestoreGate.restoring) null else store.databaseId()
+        }
+        return DiagnosticUpload.send(api, settings, databaseId, appVersion, dirs)
+    }
+
     internal fun backlog(): Int = if (store.isInstalled()) store.backlog() else 0
 
     /** Called on every poll tick by TrackingService. Cheap when off; never blocks the tick. */

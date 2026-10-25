@@ -17,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -39,6 +40,7 @@ import com.bydmate.app.ui.theme.TextSecondary
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.util.Date
@@ -61,6 +63,9 @@ fun CloudUploadCard() {
     var lastError by remember { mutableStateOf(settings.lastError) }
     var carName by remember { mutableStateOf(settings.carName) }
     var backlog by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    var diagStatus by remember { mutableStateOf<String?>(null) }
+    var diagBusy by remember { mutableStateOf(false) }
     // The uploader works in the background: refresh what it reports while the screen is open.
     LaunchedEffect(Unit) {
         while (true) {
@@ -132,10 +137,37 @@ fun CloudUploadCard() {
                 }
                 if (backlog > 0) SettingHint(text = stringResource(R.string.plus_upload_backlog, backlog))
                 lastError?.let { SettingHint(text = stringResource(R.string.plus_upload_error, it)) }
+                SettingActionRow(
+                    title = stringResource(R.string.plus_diag_title),
+                    description = stringResource(R.string.plus_diag_desc),
+                    buttonLabel = stringResource(R.string.plus_diag_button),
+                    enabled = !diagBusy,
+                    onClick = {
+                        diagBusy = true
+                        diagStatus = context.getString(R.string.plus_diag_sending)
+                        scope.launch {
+                            val outcome = withContext(Dispatchers.IO) {
+                                runCatching { uploader.uploadDiagnostics(DiagnosticUpload.dumpDirs(context)) }
+                                    .getOrElse { DiagnosticOutcome.Failed(it.javaClass.simpleName) }
+                            }
+                            diagStatus = diagnosticText(context, outcome)
+                            diagBusy = false
+                        }
+                    },
+                )
+                diagStatus?.let { SettingHint(text = it) }
             }
             Spacer(Modifier.height(8.dp))
         }
     }
+}
+
+private fun diagnosticText(context: android.content.Context, outcome: DiagnosticOutcome): String = when (outcome) {
+    is DiagnosticOutcome.Sent -> context.getString(R.string.plus_diag_sent, outcome.fileName)
+    DiagnosticOutcome.NotReady -> context.getString(R.string.plus_diag_not_ready)
+    DiagnosticOutcome.NoDump -> context.getString(R.string.plus_diag_no_dump)
+    DiagnosticOutcome.NoHeader -> context.getString(R.string.plus_diag_no_header)
+    is DiagnosticOutcome.Failed -> context.getString(R.string.plus_diag_failed, outcome.message)
 }
 
 @Composable

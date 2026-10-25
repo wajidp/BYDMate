@@ -33,4 +33,13 @@
     <string name="plus_upload_state_retrying">sem ligação, nova tentativa mais tarde</string>
     <string name="plus_upload_state_failed">o servidor rejeitou o pedido, nova tentativa daqui a uma hora</string>
     <string name="plus_upload_token_invalid">O token contém caracteres inválidos — copie-o novamente do painel.</string>
+    <string name="plus_diag_title">Dump de diagnóstico</string>
+    <string name="plus_diag_desc">Envia à nuvem o cabeçalho técnico da última gravação de log (dispositivo, configurações, sondas, log de falhas), sem o logcat e sem comandos de voz, navegação, regras, música e lista de apps usados. Grave um log antes, na captura de logs.</string>
+    <string name="plus_diag_button">Enviar último dump</string>
+    <string name="plus_diag_sending">Enviando…</string>
+    <string name="plus_diag_sent">Enviado %1$s</string>
+    <string name="plus_diag_not_ready">Ative o envio, salve o token e sincronize uma vez antes.</string>
+    <string name="plus_diag_no_dump">Nenhuma gravação de log em Downloads — inicie e pare uma antes.</string>
+    <string name="plus_diag_no_header">Esse arquivo não tem cabeçalho de diagnóstico.</string>
+    <string name="plus_diag_failed">Falha no envio: %1$s</string>
 </resources>
