@@ -33,4 +33,13 @@
     <string name="plus_upload_state_retrying">无连接，稍后重试</string>
     <string name="plus_upload_state_failed">服务器拒绝了请求，一小时后重试</string>
     <string name="plus_upload_token_invalid">令牌包含无效字符 — 请从控制台重新复制。</string>
+    <string name="plus_diag_title">诊断转储</string>
+    <string name="plus_diag_desc">将最新日志录制的技术头部（设备、设置、探测、崩溃日志）发送到云端：不含 logcat，也不含语音指令、导航、规则、音乐和使用过的应用列表。请先在日志录制中录制一次。</string>
+    <string name="plus_diag_button">上传最近的转储</string>
+    <string name="plus_diag_sending">正在上传…</string>
+    <string name="plus_diag_sent">已发送 %1$s</string>
+    <string name="plus_diag_not_ready">请先开启上传、保存令牌并同步一次。</string>
+    <string name="plus_diag_no_dump">在“下载”中未找到日志录制——请先开始并停止一次录制。</string>
+    <string name="plus_diag_no_header">该文件没有诊断头部。</string>
+    <string name="plus_diag_failed">上传失败：%1$s</string>
 </resources>
