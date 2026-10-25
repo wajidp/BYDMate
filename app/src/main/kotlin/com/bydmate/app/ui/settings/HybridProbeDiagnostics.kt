@@ -39,12 +39,10 @@ internal object HybridProbeDiagnostics {
         ProbeFid("soc_now", 1014, 1246777400, TX_GET_FLOAT),
         // Which Energy Management Mode (SAVE / AI-Energy Management) is selected is not in the
         // poll: workMode only says what the powertrain does right now. save_memory_state read 2
-        // in both modes, so it is not the mode. The next four are the named candidates, read
-        // only (some are write-side names and may answer -10011).
+        // in both modes, so it is not the mode. The write-side candidates (energy_mode_set and
+        // the two aiem_* rows) answered -10011 on 2026-10-25 and were dropped;
+        // charging_soc_save_switch (last of this group) answered 2, like save_memory_state.
         ProbeFid("save_memory_state", 1023, 1175453710, TX_GET_INT),
-        ProbeFid("energy_mode_set", 1006, 734003254, TX_GET_INT),
-        ProbeFid("aiem_target_work_mode", 1023, 844126237, TX_GET_INT),
-        ProbeFid("aiem_control_flag", 1023, 844122172, TX_GET_INT),
         ProbeFid("charging_soc_save_switch", 1009, 1186988086, TX_GET_INT),
         // Phase 2 candidates for the DM-i trip statistics (names from the car's catalog, units
         // unknown, never read on a car before): what the engine puts into the battery, torque,
@@ -54,6 +52,9 @@ internal object HybridProbeDiagnostics {
         ProbeFid("engine_state", 1012, 282067000, TX_GET_INT),
         ProbeFid("engine_indicated_torque_nm", 1012, 843055192, TX_GET_INT),
         ProbeFid("front_motor_torque", 1012, 1141899288, TX_GET_INT),
+        // front_motor_torque and water_temp_meter_percent answered -10013 (wrong transact) as
+        // ints on 2026-10-25: retried as floats.
+        ProbeFid("front_motor_torque_f", 1012, 1141899288, TX_GET_FLOAT),
         ProbeFid("rear_motor_torque", 1012, 621805592, TX_GET_INT),
         ProbeFid("power_generation_value", 1006, 638582815, TX_GET_INT),
         ProbeFid("power_generation_state", 1006, 888143882, TX_GET_INT),
@@ -64,8 +65,8 @@ internal object HybridProbeDiagnostics {
         ProbeFid("ptc_power", 1000, 1320169504, TX_GET_INT),
         ProbeFid("engine_thermostat_water_temp", 1006, 843055176, TX_GET_INT),
         ProbeFid("water_temp_meter_percent", 1007, 1246793752, TX_GET_INT),
+        ProbeFid("water_temp_meter_percent_f", 1007, 1246793752, TX_GET_FLOAT),
         ProbeFid("this_trip_fuel", 1014, 1246785576, TX_GET_FLOAT),
-        ProbeFid("remaining_battery_power", 1014, 1148190760, TX_GET_FLOAT),
     )
 
     fun batchItems(): List<BatchReadItem> = FIDS.map { BatchReadItem(it.tx, it.dev, it.fid) }
