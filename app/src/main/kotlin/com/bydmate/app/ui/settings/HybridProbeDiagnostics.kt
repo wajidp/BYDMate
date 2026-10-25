@@ -46,6 +46,26 @@ internal object HybridProbeDiagnostics {
         ProbeFid("aiem_target_work_mode", 1023, 844126237, TX_GET_INT),
         ProbeFid("aiem_control_flag", 1023, 844122172, TX_GET_INT),
         ProbeFid("charging_soc_save_switch", 1009, 1186988086, TX_GET_INT),
+        // Phase 2 candidates for the DM-i trip statistics (names from the car's catalog, units
+        // unknown, never read on a car before): what the engine puts into the battery, torque,
+        // the EV/HEV indicators, the PTC heater, coolant, fuel per trip. The owner takes dumps
+        // with the engine running in each state; reads only, nothing is polled.
+        ProbeFid("engine_charge_power", 1012, 785383440, TX_GET_INT),
+        ProbeFid("engine_state", 1012, 282067000, TX_GET_INT),
+        ProbeFid("engine_indicated_torque_nm", 1012, 843055192, TX_GET_INT),
+        ProbeFid("front_motor_torque", 1012, 1141899288, TX_GET_INT),
+        ProbeFid("rear_motor_torque", 1012, 621805592, TX_GET_INT),
+        ProbeFid("power_generation_value", 1006, 638582815, TX_GET_INT),
+        ProbeFid("power_generation_state", 1006, 888143882, TX_GET_INT),
+        ProbeFid("ev_hev_shift_key", 1006, 1250951189, TX_GET_INT),
+        ProbeFid("ev_mode_indicator", 1007, 1032917038, TX_GET_INT),
+        ProbeFid("hev_mode_indicator", 1007, 1032917039, TX_GET_INT),
+        ProbeFid("direct_drive_energy_state", 1023, 754975065, TX_GET_INT),
+        ProbeFid("ptc_power", 1000, 1320169504, TX_GET_INT),
+        ProbeFid("engine_thermostat_water_temp", 1006, 843055176, TX_GET_INT),
+        ProbeFid("water_temp_meter_percent", 1007, 1246793752, TX_GET_INT),
+        ProbeFid("this_trip_fuel", 1014, 1246785576, TX_GET_FLOAT),
+        ProbeFid("remaining_battery_power", 1014, 1148190760, TX_GET_FLOAT),
     )
 
     fun batchItems(): List<BatchReadItem> = FIDS.map { BatchReadItem(it.tx, it.dev, it.fid) }
