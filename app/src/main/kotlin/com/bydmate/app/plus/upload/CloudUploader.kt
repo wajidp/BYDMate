@@ -139,33 +139,37 @@ class CloudUploader internal constructor(
     /** Called on every poll tick by TrackingService. Cheap when off; never blocks the tick. */
     fun onPollSnapshot(data: DiParsData, location: Location?) {
         if (!settings.enabled || settings.token.isBlank() || settings.tokenRejected) return
-        if (!UploadSamples.isDriving(data)) return
+        val driving = UploadSamples.isDriving(data)
+        // Car on and parked (AC idling, engine charging): a slow live sample, no trace.
+        if (!driving && (data.powerState ?: 0) == 0) return
         val launcher = scope ?: return
         val nowMs = now()
         val fix = fixOf(location)
         val second = nowMs / MS_PER_S
-        if (second != lastTraceSecond) {
+        if (driving && second != lastTraceSecond) {
             lastTraceSecond = second
             val body = UploadSamples.trace(nowMs, data, fix, recentSocTarget(nowMs)).toString()
             launcher.launch(sampleWriter) { runCatching { traces().add(nowMs, body) } }
         }
-        if (nowMs - lastLiveAt >= LIVE_INTERVAL_MS && !liveInFlight && launcher.isActive) {
+        if (nowMs - lastLiveAt >= liveIntervalMs(data.speed) && !liveInFlight && launcher.isActive) {
             lastLiveAt = nowMs
             liveInFlight = true
-            launcher.launch(Dispatchers.IO) {
-                try {
-                    // A hybrid also reports the owner's SOC target: one read-only getInt every 30 s.
-                    val target = if (data.fuelPercent != null) readSocTarget(nowMs) else null
-                    val sample = UploadSamples.live(nowMs, data, fix, target)
-                    // Best effort: a sample that could not be sent is dropped, never queued.
-                    if (api.postLive(sample) == ApiResult.Unauthorized) tokenRejected()
-                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                    // This scope has no handler: anything escaping here would kill the service.
-                    Log.w(TAG, "live sample failed", e)
-                } finally {
-                    liveInFlight = false
-                }
-            }
+            launcher.launch(Dispatchers.IO) { sendLive(data, fix, nowMs) }
+        }
+    }
+
+    /** One live sample, best effort: one that could not be sent is dropped, never queued. */
+    private suspend fun sendLive(data: DiParsData, fix: Fix?, nowMs: Long) {
+        try {
+            // A hybrid also reports the owner's SOC target: one read-only getInt per live sample.
+            val target = if (data.fuelPercent != null) readSocTarget(nowMs) else null
+            val sample = UploadSamples.live(nowMs, data, fix, target)
+            if (api.postLive(sample) == ApiResult.Unauthorized) tokenRejected()
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            // This scope has no handler: anything escaping here would kill the service.
+            Log.w(TAG, "live sample failed", e)
+        } finally {
+            liveInFlight = false
         }
     }
 
@@ -350,6 +354,11 @@ class CloudUploader internal constructor(
         /** A trip row may still be enriched right after it appears. */
         internal const val TRACE_SETTLE_MS = 2 * 60_000L
         internal const val LIVE_INTERVAL_MS = 30_000L
+        internal const val PARKED_LIVE_INTERVAL_MS = 60_000L
+
+        /** A live sample every 30 s while moving, every 60 s while the car is on but standing. */
+        internal fun liveIntervalMs(speedKmh: Int?): Long =
+            if ((speedKmh ?: 0) > 0) LIVE_INTERVAL_MS else PARKED_LIVE_INTERVAL_MS
         internal const val CYCLE_MS = 60_000L
         private const val SOON_MS = 5_000L
         internal const val IDLE_MS = 5 * 60_000L

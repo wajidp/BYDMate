@@ -52,6 +52,37 @@ class UploadSamplesTest {
         }
     }
 
+    @Test fun `powertrain and climate values go out on both samples, fuel total on live only`() {
+        val d = snapshot(powerState = 1).copy(
+            workMode = 3, hvVoltage = 540, hvCurrent = -12.34, compressorW = 850,
+            acStatus = 1, acTemp = 22, fuelTotalL = 671.2,
+        )
+        for (json in listOf(UploadSamples.live(5L, d, null), UploadSamples.trace(5L, d, null))) {
+            assertEquals(3, json.getInt("work_mode"))
+            assertEquals(1, json.getInt("power_state"))
+            assertEquals(540, json.getInt("hv_voltage"))
+            assertEquals(-12.3, json.getDouble("hv_current"), 0.0)
+            assertEquals(850, json.getInt("compressor_w"))
+            assertEquals(true, json.getBoolean("ac_on"))
+            assertEquals(22, json.getInt("ac_setpoint"))
+        }
+        assertEquals(671.2, UploadSamples.live(5L, d, null).getDouble("fuel_total_l"), 0.0)
+        assertFalse(UploadSamples.trace(5L, d, null).has("fuel_total_l"))
+    }
+
+    @Test fun `no-data words, NaN and impossible values are not sent`() {
+        val d = snapshot(powerState = 255).copy(
+            workMode = 255, hvVoltage = 65535, hvCurrent = Double.NaN, compressorW = 65535,
+            acStatus = 2, acTemp = 5, fuelTotalL = -1.0,
+        )
+        for (json in listOf(UploadSamples.live(5L, d, null), UploadSamples.trace(5L, d, null))) {
+            for (key in listOf("work_mode", "power_state", "hv_voltage", "hv_current", "compressor_w", "ac_on", "ac_setpoint", "fuel_total_l")) {
+                assertFalse("$key must be left out", json.has(key))
+            }
+        }
+        assertFalse(UploadSamples.live(5L, snapshot().copy(acStatus = 0), null).getBoolean("ac_on"))
+    }
+
     @Test fun `a target or tank outside 0 to 100 is left out`() {
         val odd = snapshot().copy(fuelPercent = 255, fuelRangeKm = -1)
         val json = UploadSamples.live(5L, odd, null, socTarget = 101)
