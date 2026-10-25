@@ -32,19 +32,20 @@ internal object HybridProbeDiagnostics {
         ProbeFid("fuel_tank_cap", 1001, 1336934422, TX_GET_INT),
         ProbeFid("ev_range_km", 1014, 1246765118, TX_GET_INT),
         ProbeFid("elec_phm", 1014, 1032863794, TX_GET_FLOAT),
-        // The SOC target the owner sets on the Energy screen (15..70 %), which the engine
-        // charges up to. Which of these carries it, and as int or float, is still open: both
-        // transacts are read, raw. Reads only; the _SET twins are never touched.
+        // The SOC target on the Energy screen (15..70 %, the level the engine holds the battery
+        // to): the first row answers its percent, the owner's dumps of 2026-10-25 confirmed it.
+        // The statistic twin, the has-target flag and the float read were dead (-10011 / -1.0).
         ProbeFid("soc_target_dr", 1023, 873463848, TX_GET_INT),
-        ProbeFid("soc_target_dr_f", 1023, 873463848, TX_GET_FLOAT),
-        ProbeFid("soc_target_stat", 1014, 1083191348, TX_GET_INT),
-        ProbeFid("soc_target_stat_f", 1014, 1083191348, TX_GET_FLOAT),
-        ProbeFid("has_soc_target", 1023, 130532, TX_GET_INT),
         ProbeFid("soc_now", 1014, 1246777400, TX_GET_FLOAT),
         // Which Energy Management Mode (SAVE / AI-Energy Management) is selected is not in the
-        // poll: workMode only says what the powertrain does right now. The "SAVE Mode Memory"
-        // state is the closest named fid; the owner dumps once per mode to see which flips.
+        // poll: workMode only says what the powertrain does right now. save_memory_state read 2
+        // in both modes, so it is not the mode. The next four are the named candidates, read
+        // only (some are write-side names and may answer -10011).
         ProbeFid("save_memory_state", 1023, 1175453710, TX_GET_INT),
+        ProbeFid("energy_mode_set", 1006, 734003254, TX_GET_INT),
+        ProbeFid("aiem_target_work_mode", 1023, 844126237, TX_GET_INT),
+        ProbeFid("aiem_control_flag", 1023, 844122172, TX_GET_INT),
+        ProbeFid("charging_soc_save_switch", 1009, 1186988086, TX_GET_INT),
     )
 
     fun batchItems(): List<BatchReadItem> = FIDS.map { BatchReadItem(it.tx, it.dev, it.fid) }
