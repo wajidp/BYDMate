@@ -183,6 +183,12 @@ class CloudUploaderTest {
         assertNull("sent samples are deleted", traces.oldest())
     }
 
+    @Test fun `live samples come every 30 s on the move and every 60 s standing`() {
+        assertEquals(30_000L, CloudUploader.liveIntervalMs(50))
+        assertEquals(60_000L, CloudUploader.liveIntervalMs(0))
+        assertEquals(60_000L, CloudUploader.liveIntervalMs(null))
+    }
+
     @Test fun `backoff doubles to a cap`() {
         assertEquals(30_000L, CloudUploader.backoffMs(1))
         assertEquals(60_000L, CloudUploader.backoffMs(2))
