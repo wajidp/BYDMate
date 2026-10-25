@@ -1,6 +1,7 @@
 # BYDMate+ — keep the fork on top of the latest upstream release and publish it.
 #
-# Every 6 h (or by hand): if AndyShaman/BYDMate has a new release, rebase our own commits
+# By hand only (Actions > Run workflow; the 6-hourly schedule is gone): if AndyShaman/BYDMate
+# has a new release, rebase our own commits
 # (upstream-base..main) onto it. Then, if main differs from our last release, run the same
 # gate as upstream CI plus the unit tests, build a signed APK and publish it as a GitHub
 # release. BYDMate+'s UpdateChecker reads those releases, so the car offers the update.
@@ -19,8 +20,6 @@
 name: Sync upstream & release BYDMate+
 
 on:
-  schedule:
-    - cron: '17 */6 * * *'
   workflow_dispatch:
     inputs:
       force:
