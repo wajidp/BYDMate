@@ -151,7 +151,7 @@ class CloudUploader internal constructor(
             val body = UploadSamples.trace(nowMs, data, fix, recentSocTarget(nowMs)).toString()
             launcher.launch(sampleWriter) { runCatching { traces().add(nowMs, body) } }
         }
-        if (nowMs - lastLiveAt >= liveIntervalMs(data.speed) && !liveInFlight && launcher.isActive) {
+        if (nowMs - lastLiveAt >= liveIntervalMs(data) && !liveInFlight && launcher.isActive) {
             lastLiveAt = nowMs
             liveInFlight = true
             launcher.launch(Dispatchers.IO) { sendLive(data, fix, nowMs) }
@@ -178,6 +178,8 @@ class CloudUploader internal constructor(
         lastSocTarget?.takeIf { nowMs - lastSocTargetAt <= SOC_TARGET_MAX_AGE_MS }
 
     private suspend fun readSocTarget(nowMs: Long): Int? {
+        // Samples can come every 10 s while the engine charges; the car is still asked only about every 30 s.
+        if (nowMs - lastSocTargetAt < LIVE_INTERVAL_MS - SOC_TARGET_REREAD_SLACK_MS) return lastSocTarget
         val target = try {
             socTarget()
         } catch (e: CancellationException) {
@@ -355,10 +357,19 @@ class CloudUploader internal constructor(
         internal const val TRACE_SETTLE_MS = 2 * 60_000L
         internal const val LIVE_INTERVAL_MS = 30_000L
         internal const val PARKED_LIVE_INTERVAL_MS = 60_000L
+        internal const val ENGINE_STANDING_INTERVAL_MS = 10_000L
+        private const val MAX_RPM = 8_000
+        private const val CHARGING_AMPS = -1.0
 
-        /** A live sample every 30 s while moving, every 60 s while the car is on but standing. */
-        internal fun liveIntervalMs(speedKmh: Int?): Long =
-            if ((speedKmh ?: 0) > 0) LIVE_INTERVAL_MS else PARKED_LIVE_INTERVAL_MS
+        /**
+         * A live sample every 30 s while moving, every 10 s while the car stands with the engine
+         * running or the battery charging (the DM-i engine charging in P), every 60 s otherwise.
+         */
+        internal fun liveIntervalMs(d: DiParsData): Long = when {
+            (d.speed ?: 0) > 0 -> LIVE_INTERVAL_MS
+            (d.engineRpm ?: 0) in 1..MAX_RPM || (d.hvCurrent ?: 0.0) < CHARGING_AMPS -> ENGINE_STANDING_INTERVAL_MS
+            else -> PARKED_LIVE_INTERVAL_MS
+        }
         internal const val CYCLE_MS = 60_000L
         private const val SOON_MS = 5_000L
         internal const val IDLE_MS = 5 * 60_000L
@@ -368,6 +379,7 @@ class CloudUploader internal constructor(
         private const val FIX_MAX_AGE_NS = 15_000_000_000L
         private const val MAX_SHIFT = 10
         private const val SOC_TARGET_MAX_AGE_MS = 90_000L
+        private const val SOC_TARGET_REREAD_SLACK_MS = 5_000L
 
         internal fun backoffMs(failures: Int): Long =
             (BACKOFF_BASE_MS shl (failures - 1).coerceIn(0, MAX_SHIFT)).coerceAtMost(BACKOFF_MAX_MS)

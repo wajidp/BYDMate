@@ -83,6 +83,18 @@ class UploadSamplesTest {
         assertFalse(UploadSamples.live(5L, snapshot().copy(acStatus = 0), null).getBoolean("ac_on"))
     }
 
+    @Test fun `live samples come every 30 s moving, 10 s standing with the engine running, 60 s otherwise`() {
+        assertEquals(30_000L, CloudUploader.liveIntervalMs(snapshot(speed = 50)))
+        assertEquals(30_000L, CloudUploader.liveIntervalMs(snapshot(speed = 50).copy(engineRpm = 1500)))
+        assertEquals(60_000L, CloudUploader.liveIntervalMs(snapshot(speed = 0).copy(engineRpm = 0)))
+        assertEquals(60_000L, CloudUploader.liveIntervalMs(snapshot(speed = null).copy(engineRpm = null)))
+        assertEquals(10_000L, CloudUploader.liveIntervalMs(snapshot(speed = 0).copy(engineRpm = 1200)))
+        assertEquals(10_000L, CloudUploader.liveIntervalMs(snapshot(speed = 0).copy(engineRpm = 0, hvCurrent = -8.5)))
+        assertEquals(60_000L, CloudUploader.liveIntervalMs(snapshot(speed = 0).copy(engineRpm = 0, hvCurrent = 3.1)))
+        assertEquals("EV sentinel rpm", 60_000L, CloudUploader.liveIntervalMs(snapshot(speed = 0).copy(engineRpm = 8191)))
+        assertEquals("NaN current", 60_000L, CloudUploader.liveIntervalMs(snapshot(speed = 0).copy(engineRpm = 0, hvCurrent = Double.NaN)))
+    }
+
     @Test fun `a target or tank outside 0 to 100 is left out`() {
         val odd = snapshot().copy(fuelPercent = 255, fuelRangeKm = -1)
         val json = UploadSamples.live(5L, odd, null, socTarget = 101)
