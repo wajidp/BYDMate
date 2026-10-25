@@ -41,14 +41,12 @@ class HybridProbeDiagnosticsTest {
                 "soc_target_dr" to 873463848,
                 "soc_now" to 1246777400,
                 "save_memory_state" to 1175453710,
-                "energy_mode_set" to 734003254,
-                "aiem_target_work_mode" to 844126237,
-                "aiem_control_flag" to 844122172,
                 "charging_soc_save_switch" to 1186988086,
                 "engine_charge_power" to 785383440,
                 "engine_state" to 282067000,
                 "engine_indicated_torque_nm" to 843055192,
                 "front_motor_torque" to 1141899288,
+                "front_motor_torque_f" to 1141899288,
                 "rear_motor_torque" to 621805592,
                 "power_generation_value" to 638582815,
                 "power_generation_state" to 888143882,
@@ -59,14 +57,17 @@ class HybridProbeDiagnosticsTest {
                 "ptc_power" to 1320169504,
                 "engine_thermostat_water_temp" to 843055176,
                 "water_temp_meter_percent" to 1246793752,
+                "water_temp_meter_percent_f" to 1246793752,
                 "this_trip_fuel" to 1246785576,
-                "remaining_battery_power" to 1148190760,
             ),
             HybridProbeDiagnostics.FIDS.map { it.name to it.fid },
         )
         assertEquals(
-            "the consumption fids and the float twins of the SOC probes are float reads",
-            listOf("fuel_instant", "fuel_total", "fuel_avg_phm", "elec_phm", "soc_now", "this_trip_fuel", "remaining_battery_power"),
+            "the consumption fids, the SOC read and the float re-reads are float reads",
+            listOf(
+                "fuel_instant", "fuel_total", "fuel_avg_phm", "elec_phm", "soc_now",
+                "front_motor_torque_f", "water_temp_meter_percent_f", "this_trip_fuel",
+            ),
             HybridProbeDiagnostics.FIDS.filter { it.tx == 7 }.map { it.name },
         )
     }
