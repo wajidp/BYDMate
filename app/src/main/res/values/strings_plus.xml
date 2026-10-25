@@ -33,4 +33,13 @@
     <string name="plus_upload_state_retrying">нет связи, повтор позже</string>
     <string name="plus_upload_state_failed">сервер отклонил запрос, повтор через час</string>
     <string name="plus_upload_token_invalid">Токен содержит недопустимые символы — скопируйте его из панели ещё раз.</string>
+    <string name="plus_diag_title">Диагностика</string>
+    <string name="plus_diag_desc">Отправляет в облако технический заголовок последней записи логов (устройство, настройки, пробы, журнал сбоев) без logcat, без голосовых команд, навигации, правил, музыки и списка запущенных приложений. Сначала запишите лог в разделе записи логов.</string>
+    <string name="plus_diag_button">Отправить последний дамп</string>
+    <string name="plus_diag_sending">Отправка…</string>
+    <string name="plus_diag_sent">Отправлено: %1$s</string>
+    <string name="plus_diag_not_ready">Включите загрузку, сохраните токен и один раз синхронизируйте.</string>
+    <string name="plus_diag_no_dump">В «Загрузках» нет записи логов — сначала начните и остановите запись.</string>
+    <string name="plus_diag_no_header">В этом файле нет диагностического заголовка.</string>
+    <string name="plus_diag_failed">Не отправлено: %1$s</string>
 </resources>

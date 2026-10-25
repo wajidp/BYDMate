@@ -31,6 +31,7 @@ internal data class SyncState(val carName: String?, val watermarks: Map<String, 
 internal data class BatchAck(val replayed: Boolean, val rejected: Int, val watermarks: Map<String, Long>)
 
 /** The car side of api/openapi.yaml. Blocking; call from Dispatchers.IO. */
+@Suppress("TooManyFunctions") // one small function per endpoint plus request helpers
 internal class UploadApi(
     private val client: OkHttpClient,
     private val baseUrl: () -> String,
@@ -72,6 +73,16 @@ internal class UploadApi(
         val req = request(url.toString())
             .header("Content-Encoding", "gzip")
             .post(gzip(trace.toString()).toRequestBody(JSON))
+            .build()
+        return call(req) { }
+    }
+
+    /** The owner's manual diagnostic dump: one call, no retry queue. */
+    fun postDiagnostics(body: JSONObject): ApiResult<Unit> = guarded {
+        val url = url("v1/car/diagnostics") ?: return badAddress()
+        val req = request(url.toString())
+            .header("Content-Encoding", "gzip")
+            .post(gzip(body.toString()).toRequestBody(JSON))
             .build()
         return call(req) { }
     }

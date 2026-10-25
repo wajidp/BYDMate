@@ -33,4 +33,13 @@
     <string name="plus_upload_state_retrying">няма сувязі, паўтор пазней</string>
     <string name="plus_upload_state_failed">сервер адхіліў запыт, паўтор праз гадзіну</string>
     <string name="plus_upload_token_invalid">Токен мае недапушчальныя сімвалы — скапіруйце яго з панэлі яшчэ раз.</string>
+    <string name="plus_diag_title">Дыягнастычны дамп</string>
+    <string name="plus_diag_desc">Адпраўляе ў воблака тэхнічны загаловак апошняга запісу логаў (прылада, налады, пробы, журнал збояў) без logcat, без галасавых каманд, навігацыі, правіл, музыкі і спісу выкарыстаных праграм. Спачатку запішыце лог у запісе логаў.</string>
+    <string name="plus_diag_button">Адправіць апошні дамп</string>
+    <string name="plus_diag_sending">Адпраўка…</string>
+    <string name="plus_diag_sent">Адпраўлена: %1$s</string>
+    <string name="plus_diag_not_ready">Уключыце загрузку, захавайце токен і адзін раз сінхранізуйце.</string>
+    <string name="plus_diag_no_dump">У «Загрузках» няма запісу логаў — спачатку пачніце і спыніце запіс.</string>
+    <string name="plus_diag_no_header">У гэтым файле няма дыягнастычнага загалоўка.</string>
+    <string name="plus_diag_failed">Не адпраўлена: %1$s</string>
 </resources>

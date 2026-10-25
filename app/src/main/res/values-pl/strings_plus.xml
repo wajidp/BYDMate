@@ -33,4 +33,13 @@
     <string name="plus_upload_state_retrying">brak połączenia, ponowna próba później</string>
     <string name="plus_upload_state_failed">serwer odrzucił żądanie, ponowna próba za godzinę</string>
     <string name="plus_upload_token_invalid">Token zawiera niedozwolone znaki — skopiuj go ponownie z panelu.</string>
+    <string name="plus_diag_title">Zrzut diagnostyczny</string>
+    <string name="plus_diag_desc">Wysyła do chmury techniczny nagłówek ostatniego nagrania logów (urządzenie, ustawienia, sondy, log awarii), bez logcatu oraz bez poleceń głosowych, nawigacji, reguł, muzyki i listy używanych aplikacji. Najpierw nagraj log w przechwytywaniu logów.</string>
+    <string name="plus_diag_button">Wyślij ostatni zrzut</string>
+    <string name="plus_diag_sending">Wysyłanie…</string>
+    <string name="plus_diag_sent">Wysłano %1$s</string>
+    <string name="plus_diag_not_ready">Włącz wysyłanie, zapisz token i zsynchronizuj raz.</string>
+    <string name="plus_diag_no_dump">Nie znaleziono nagrania logów w Pobranych — najpierw rozpocznij i zatrzymaj nagranie.</string>
+    <string name="plus_diag_no_header">Ten plik nie ma nagłówka diagnostycznego.</string>
+    <string name="plus_diag_failed">Wysyłanie nie powiodło się: %1$s</string>
 </resources>
