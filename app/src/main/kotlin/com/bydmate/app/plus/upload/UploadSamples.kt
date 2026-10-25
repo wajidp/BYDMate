@@ -15,11 +15,12 @@ internal object UploadSamples {
 
     private const val SOC_MAX = 100.0
     private const val PEDAL_MAX = 100.0
+    private const val SOC_TARGET_MAX = 100
 
     /** Ignition in drive, or rolling: the span a trip can cover. */
     fun isDriving(d: DiParsData): Boolean = d.powerState == 2 || (d.speed ?: 0) > 0
 
-    fun trace(t: Long, d: DiParsData, fix: Fix?): JSONObject = JSONObject().apply {
+    fun trace(t: Long, d: DiParsData, fix: Fix?, socTarget: Int? = null): JSONObject = JSONObject().apply {
         put("t", t)
         nonNegative(d.speed)?.let { put("speed", it) }
         inRange(d.pedalAccel, PEDAL_MAX)?.let { put("accel", it) }
@@ -27,10 +28,11 @@ internal object UploadSamples {
         finite(d.power)?.let { put("power", it) }
         nonNegative(d.engineRpm)?.let { put("rpm", it) }
         inRange(d.soc, SOC_MAX)?.let { put("soc", it) }
+        putHybrid(d, socTarget)
         putFix(fix)
     }
 
-    fun live(ts: Long, d: DiParsData, fix: Fix?): JSONObject = JSONObject().apply {
+    fun live(ts: Long, d: DiParsData, fix: Fix?, socTarget: Int? = null): JSONObject = JSONObject().apply {
         put("ts", ts)
         inRange(d.soc, SOC_MAX)?.let { put("soc", it) }
         nonNegative(d.speed)?.let { put("speed_kmh", it) }
@@ -43,7 +45,15 @@ internal object UploadSamples {
         d.avgBatTemp?.let { put("bat_temp", it) }
         finite(d.voltage12v)?.let { put("voltage_12v", it) }
         tyres(d)?.let { put("tyres", it) }
+        putHybrid(d, socTarget)
+        d.fuelRangeKm?.takeIf { it >= 0 }?.let { put("fuel_range_km", it) }
         putFix(fix)
+    }
+
+    /** Hybrid-only values; a car without them (or with the sentinel) sends none of these keys. */
+    private fun JSONObject.putHybrid(d: DiParsData, socTarget: Int?) {
+        socTarget?.takeIf { it in 0..SOC_TARGET_MAX }?.let { put("soc_target", it) }
+        d.fuelPercent?.takeIf { it in 0..SOC_TARGET_MAX }?.let { put("fuel_percent", it) }
     }
 
     private fun tyres(d: DiParsData): JSONObject? {

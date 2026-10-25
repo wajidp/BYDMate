@@ -35,6 +35,31 @@ class UploadSamplesTest {
         assertEquals(25.2, json.getDouble("lat"), 0.0)
     }
 
+    @Test fun `a hybrid sends its soc target and tank, an EV sends none of those keys`() {
+        val hybrid = snapshot().copy(fuelPercent = 86, fuelRangeKm = 1335)
+        val live = UploadSamples.live(5L, hybrid, null, socTarget = 43)
+        assertEquals(43, live.getInt("soc_target"))
+        assertEquals(86, live.getInt("fuel_percent"))
+        assertEquals(1335, live.getInt("fuel_range_km"))
+        val trace = UploadSamples.trace(5L, hybrid, null, socTarget = 43)
+        assertEquals(43, trace.getInt("soc_target"))
+        assertEquals(86, trace.getInt("fuel_percent"))
+
+        for (json in listOf(UploadSamples.live(5L, snapshot(), null), UploadSamples.trace(5L, snapshot(), null))) {
+            assertFalse(json.has("soc_target"))
+            assertFalse(json.has("fuel_percent"))
+            assertFalse(json.has("fuel_range_km"))
+        }
+    }
+
+    @Test fun `a target or tank outside 0 to 100 is left out`() {
+        val odd = snapshot().copy(fuelPercent = 255, fuelRangeKm = -1)
+        val json = UploadSamples.live(5L, odd, null, socTarget = 101)
+        assertFalse(json.has("soc_target"))
+        assertFalse(json.has("fuel_percent"))
+        assertFalse(json.has("fuel_range_km"))
+    }
+
     @Test fun `out of range values are left out, not sent`() {
         val json = UploadSamples.trace(1L, snapshot(soc = 120, speed = -1, pedalAccel = 255), null)
         assertFalse(json.has("soc"))

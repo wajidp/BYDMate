@@ -39,21 +39,18 @@ class HybridProbeDiagnosticsTest {
                 "ev_range_km" to 1246765118,
                 "elec_phm" to 1032863794,
                 "soc_target_dr" to 873463848,
-                "soc_target_dr_f" to 873463848,
-                "soc_target_stat" to 1083191348,
-                "soc_target_stat_f" to 1083191348,
-                "has_soc_target" to 130532,
                 "soc_now" to 1246777400,
                 "save_memory_state" to 1175453710,
+                "energy_mode_set" to 734003254,
+                "aiem_target_work_mode" to 844126237,
+                "aiem_control_flag" to 844122172,
+                "charging_soc_save_switch" to 1186988086,
             ),
             HybridProbeDiagnostics.FIDS.map { it.name to it.fid },
         )
         assertEquals(
             "the consumption fids and the float twins of the SOC probes are float reads",
-            listOf(
-                "fuel_instant", "fuel_total", "fuel_avg_phm", "elec_phm",
-                "soc_target_dr_f", "soc_target_stat_f", "soc_now",
-            ),
+            listOf("fuel_instant", "fuel_total", "fuel_avg_phm", "elec_phm", "soc_now"),
             HybridProbeDiagnostics.FIDS.filter { it.tx == 7 }.map { it.name },
         )
     }

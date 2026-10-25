@@ -7,6 +7,7 @@ import android.util.Log
 import com.bydmate.app.BuildConfig
 import com.bydmate.app.data.local.database.AppDatabase
 import com.bydmate.app.data.remote.DiParsData
+import com.bydmate.app.data.vehicle.HelperClient
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -29,8 +30,8 @@ import javax.inject.Singleton
 
 /**
  * BYDMate+ uploader to BYDMate Cloud (api/openapi.yaml): one-way, read-only. It sends rows the
- * app already stores plus samples of the poll snapshot it is handed; it never reads the car on
- * its own and never writes to it.
+ * app already stores plus samples of the poll snapshot it is handed. Its one read of the car is
+ * the owner's SOC target on a hybrid, a getInt every 30 s ([SocTargetReader]); it never writes.
  *
  * One batch in flight at a time, each stored before it is sent, so a retry is byte-identical.
  * Started by TrackingService; everything runs on its own coroutine and never throws into the
@@ -46,18 +47,25 @@ class CloudUploader internal constructor(
     private val appVersion: String,
     private val now: () -> Long = System::currentTimeMillis,
     private val fixOf: (Location?) -> Fix? = ::freshFix,
+    private val socTarget: suspend () -> Int? = { null },
 ) {
 
-    @Inject constructor(@ApplicationContext context: Context, database: AppDatabase) : this(
-        context, UploadSettings(context), database,
+    @Inject constructor(@ApplicationContext context: Context, database: AppDatabase, helper: HelperClient) : this(
+        context, UploadSettings(context), database, SocTargetReader(helper),
     )
 
-    private constructor(context: Context, settings: UploadSettings, database: AppDatabase) : this(
+    private constructor(
+        context: Context,
+        settings: UploadSettings,
+        database: AppDatabase,
+        socTargetReader: SocTargetReader,
+    ) : this(
         settings = settings,
         store = UploadStore({ database.openHelper.writableDatabase }, File(context.filesDir, BATCH_DIR)),
         traces = lazyTraceStore(context),
         api = UploadApi(httpClient(), { settings.serverUrl }, { settings.token }, "BYDMatePlus/${BuildConfig.VERSION_NAME}"),
         appVersion = "plus-${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+        socTarget = socTargetReader::read,
     )
 
     private sealed interface BatchStep {
@@ -85,6 +93,8 @@ class CloudUploader internal constructor(
     @Volatile private var lastTraceSecond = -1L
     @Volatile private var lastLiveAt = 0L
     @Volatile private var liveInFlight = false
+    @Volatile private var lastSocTarget: Int? = null
+    @Volatile private var lastSocTargetAt = 0L
 
     fun start(scope: CoroutineScope) {
         if (job?.isActive == true) return
@@ -136,15 +146,17 @@ class CloudUploader internal constructor(
         val second = nowMs / MS_PER_S
         if (second != lastTraceSecond) {
             lastTraceSecond = second
-            val body = UploadSamples.trace(nowMs, data, fix).toString()
+            val body = UploadSamples.trace(nowMs, data, fix, recentSocTarget(nowMs)).toString()
             launcher.launch(sampleWriter) { runCatching { traces().add(nowMs, body) } }
         }
         if (nowMs - lastLiveAt >= LIVE_INTERVAL_MS && !liveInFlight && launcher.isActive) {
             lastLiveAt = nowMs
             liveInFlight = true
-            val sample = UploadSamples.live(nowMs, data, fix)
             launcher.launch(Dispatchers.IO) {
                 try {
+                    // A hybrid also reports the owner's SOC target: one read-only getInt every 30 s.
+                    val target = if (data.fuelPercent != null) readSocTarget(nowMs) else null
+                    val sample = UploadSamples.live(nowMs, data, fix, target)
                     // Best effort: a sample that could not be sent is dropped, never queued.
                     if (api.postLive(sample) == ApiResult.Unauthorized) tokenRejected()
                 } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
@@ -155,6 +167,24 @@ class CloudUploader internal constructor(
                 }
             }
         }
+    }
+
+    /** The last SOC target read, while it is still fresh enough to stamp on the per-second trace. */
+    private fun recentSocTarget(nowMs: Long): Int? =
+        lastSocTarget?.takeIf { nowMs - lastSocTargetAt <= SOC_TARGET_MAX_AGE_MS }
+
+    private suspend fun readSocTarget(nowMs: Long): Int? {
+        val target = try {
+            socTarget()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            Log.w(TAG, "soc target read failed", e)
+            null
+        }
+        lastSocTarget = target
+        lastSocTargetAt = nowMs
+        return target
     }
 
     /** One pass: sync state once, drain batches, then traces. Returns how long to wait. */
@@ -328,6 +358,7 @@ class CloudUploader internal constructor(
         private const val BACKOFF_MAX_MS = 15 * 60_000L
         private const val FIX_MAX_AGE_NS = 15_000_000_000L
         private const val MAX_SHIFT = 10
+        private const val SOC_TARGET_MAX_AGE_MS = 90_000L
 
         internal fun backoffMs(failures: Int): Long =
             (BACKOFF_BASE_MS shl (failures - 1).coerceIn(0, MAX_SHIFT)).coerceAtMost(BACKOFF_MAX_MS)
