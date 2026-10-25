@@ -32,6 +32,19 @@ internal object HybridProbeDiagnostics {
         ProbeFid("fuel_tank_cap", 1001, 1336934422, TX_GET_INT),
         ProbeFid("ev_range_km", 1014, 1246765118, TX_GET_INT),
         ProbeFid("elec_phm", 1014, 1032863794, TX_GET_FLOAT),
+        // The SOC target the owner sets on the Energy screen (15..70 %), which the engine
+        // charges up to. Which of these carries it, and as int or float, is still open: both
+        // transacts are read, raw. Reads only; the _SET twins are never touched.
+        ProbeFid("soc_target_dr", 1023, 873463848, TX_GET_INT),
+        ProbeFid("soc_target_dr_f", 1023, 873463848, TX_GET_FLOAT),
+        ProbeFid("soc_target_stat", 1014, 1083191348, TX_GET_INT),
+        ProbeFid("soc_target_stat_f", 1014, 1083191348, TX_GET_FLOAT),
+        ProbeFid("has_soc_target", 1023, 130532, TX_GET_INT),
+        ProbeFid("soc_now", 1014, 1246777400, TX_GET_FLOAT),
+        // Which Energy Management Mode (SAVE / AI-Energy Management) is selected is not in the
+        // poll: workMode only says what the powertrain does right now. The "SAVE Mode Memory"
+        // state is the closest named fid; the owner dumps once per mode to see which flips.
+        ProbeFid("save_memory_state", 1023, 1175453710, TX_GET_INT),
     )
 
     fun batchItems(): List<BatchReadItem> = FIDS.map { BatchReadItem(it.tx, it.dev, it.fid) }
