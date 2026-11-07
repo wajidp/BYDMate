@@ -86,6 +86,7 @@ class AebKeeper internal constructor(
         CoroutineScope(SupervisorJob() + Dispatchers.IO),
         AebClocks({ SystemClock.elapsedRealtime() }, { System.currentTimeMillis() }),
         {
+            AebChime.play()
             withContext(Dispatchers.Main) {
                 runCatching { Toast.makeText(context, R.string.plus_aeb_toast_switched_off, Toast.LENGTH_LONG).show() }
             }
