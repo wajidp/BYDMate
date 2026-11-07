@@ -12,7 +12,7 @@ internal object DiagnosticRedactor {
         "automation params", "vehicle data sources", "audio", "displays", "blind spot",
         "trip counters", "helper daemon", "windows", "seats", "seat command journal",
         "steering heat", "fid resolve", "auto backup", "vehicle writes", "fid push",
-        "fid recorder", "last crash", "trace", "autostart",
+        "fid recorder", "last crash", "trace", "autostart", "rear seat heat",
     )
     private val SECTION = Regex("^--- (.+) ---$")
 

@@ -90,7 +90,7 @@ class DiagnosticUploadTest {
         val written = Regex("""appendLine\("--- ([^"]+) ---"\)""").findAll(source).map { it.groupValues[1] }.toSet()
         val leftOut = setOf(
             "rules", "automation journal", "agent", "voice", "hud", "cluster music", "cluster", "split",
-            "steering key", "native assistant packages",
+            "steering key", "native assistant packages", "car status", "dtc scan",
         )
         val unknown = written - DiagnosticRedactor.ALLOWED_SECTIONS - leftOut
         assertTrue("new header sections need a decision (allow or leave out): $unknown", unknown.isEmpty())
