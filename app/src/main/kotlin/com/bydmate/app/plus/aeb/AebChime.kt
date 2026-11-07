@@ -10,13 +10,14 @@ import kotlin.math.sin
 /**
  * The soft "ding" that says Keep AEB off just switched AEB off. Synthesized, so the APK carries no
  * sound file: a 1046 Hz bell (C6) with a quiet octave overtone, a few ms attack and a smooth decay,
- * about 0.4 s. Played as a notification sound, so it follows the car's notification volume.
+ * about 0.4 s. Played on the media stream: DiLink routes or mutes the notification stream, media is what the
+ * owner reliably hears.
  */
 internal object AebChime {
     private const val RATE = 44_100
     private const val SECONDS = 0.4
     private const val FUNDAMENTAL_HZ = 1046.5
-    private const val PEAK = 0.35
+    private const val PEAK = 0.5
     private const val ATTACK_SECONDS = 0.004
     private const val DECAY_PER_SECOND = 9.0
 
@@ -39,8 +40,8 @@ internal object AebChime {
             val track = AudioTrack.Builder()
                 .setAudioAttributes(
                     AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .build(),
                 )
                 .setAudioFormat(
