@@ -76,6 +76,11 @@ fun AebKeepOffCard() {
             )
             if (enabled) SettingHint(text = stringResource(R.string.plus_aeb_now, now))
             last?.let { SettingHint(text = stringResource(R.string.plus_aeb_last, it)) }
+            if (enabled) {
+                TextButton(onClick = { AebChime.play() }) {
+                    Text(stringResource(R.string.plus_aeb_test_sound), color = AccentOrange)
+                }
+            }
             Spacer(Modifier.height(8.dp))
         }
     }

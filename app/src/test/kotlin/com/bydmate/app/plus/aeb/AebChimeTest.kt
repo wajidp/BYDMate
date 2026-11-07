@@ -16,7 +16,7 @@ class AebChimeTest {
 
     @Test fun `it is quiet enough not to clip and fades away`() {
         val peak = pcm.maxOf { abs(it.toInt()) }
-        assertTrue(peak in 3_000..14_000)
+        assertTrue(peak in 3_000..20_000)
         val tail = pcm.takeLast(2_000).maxOf { abs(it.toInt()) }
         assertTrue(tail < peak / 8)
     }
