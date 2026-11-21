@@ -85,12 +85,12 @@ class DiagnosticUploadTest {
 
     @Test fun `every section the header writes is either allowed or deliberately left out`() {
         val source = listOf("src/main/kotlin", "app/src/main/kotlin")
-            .map { java.io.File(it, "com/bydmate/app/ui/settings/SettingsViewModel.kt") }
+            .map { java.io.File(it, "com/bydmate/app/ui/settings/DiagnosticDumpWriter.kt") }
             .first { it.isFile }.readText()
         val written = Regex("""appendLine\("--- ([^"]+) ---"\)""").findAll(source).map { it.groupValues[1] }.toSet()
         val leftOut = setOf(
             "rules", "automation journal", "agent", "voice", "hud", "cluster music", "cluster", "split",
-            "steering key", "native assistant packages", "car status", "dtc scan",
+            "steering key", "native assistant packages", "car status", "dtc scan", "tpms", "ecu firmware",
         )
         val unknown = written - DiagnosticRedactor.ALLOWED_SECTIONS - leftOut
         assertTrue("new header sections need a decision (allow or leave out): $unknown", unknown.isEmpty())

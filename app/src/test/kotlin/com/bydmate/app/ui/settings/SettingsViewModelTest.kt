@@ -1525,6 +1525,10 @@ class SettingsViewModelTest {
                 .replace(Regex("(?m)^timestamp: \\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"), "timestamp: <now>")
                 // app: the version name and code move with every release.
                 .replace(Regex("(?m)^(app: \\S+) v\\S+ \\(code=\\d+\\)$"), "$1 v<version> (code=<code>)")
+                // BYDMate+ ships under its own application id; the reference is upstream's.
+                .replace("app: ${com.bydmate.app.BuildConfig.APPLICATION_ID} v", "app: com.bydmate.app v")
+                // ...and the read-only probe rows the fork adds to the hybrid probe (not in upstream's reference).
+                .replace(Regex("(?m)^(?:soc_target_dr|soc_now|save_memory_state|charging_soc_save_switch|engine_charge_power|engine_state|engine_indicated_torque_nm|front_motor_torque|front_motor_torque_f|rear_motor_torque|power_generation_value|power_generation_state|ev_hev_shift_key|ev_mode_indicator|hev_mode_indicator|direct_drive_energy_state|ptc_power|engine_thermostat_water_temp|water_temp_meter_percent|water_temp_meter_percent_f|this_trip_fuel)\\[dev=.*\n"), "")
             val reference = javaClass.getResourceAsStream("/diagnostic-dump/reference-header.txt")!!
                 .bufferedReader().use { it.readText() }
             assertEquals(reference, normalized)

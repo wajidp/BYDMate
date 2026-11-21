@@ -167,8 +167,8 @@ class UploadStoreTest {
     @Test fun `points refer to their trip's record id and unattached ones carry none`() = runBlocking {
         store.ensureInstalled()
         val trip = db.tripDao().insert(TripEntity(startTs = 1L, endTs = 100L))
-        db.tripPointDao().insert(TripPointEntity(tripId = trip, timestamp = 50L, lat = 1.0, lon = 2.0))
-        db.tripPointDao().insert(TripPointEntity(tripId = 0, timestamp = 500L, lat = 1.0, lon = 2.0))
+        db.tripPointDao().insertAll(listOf(TripPointEntity(tripId = trip, timestamp = 50L, lat = 1.0, lon = 2.0)))
+        db.tripPointDao().insertAll(listOf(TripPointEntity(tripId = 0, timestamp = 500L, lat = 1.0, lon = 2.0)))
         val tables = body(build()!!).getJSONObject("tables")
         val tripId = tables.getJSONArray("trips").getJSONObject(0).getString("id")
         val points = tables.getJSONArray("trip_points")
@@ -180,7 +180,7 @@ class UploadStoreTest {
 
     @Test fun `attaching points later sends them again`() = runBlocking {
         store.ensureInstalled()
-        db.tripPointDao().insert(TripPointEntity(tripId = 0, timestamp = 50L, lat = 1.0, lon = 2.0))
+        db.tripPointDao().insertAll(listOf(TripPointEntity(tripId = 0, timestamp = 50L, lat = 1.0, lon = 2.0)))
         drain()
         val trip = db.tripDao().insert(TripEntity(startTs = 1L, endTs = 100L))
         db.tripPointDao().attachToTrip(trip, 1L, 100L)
@@ -311,7 +311,8 @@ class UploadStoreTest {
 
     @Test fun `points and snapshots keep their record id through delete and re-insert`() = runBlocking {
         store.ensureInstalled()
-        val point = db.tripPointDao().insert(TripPointEntity(tripId = 0, timestamp = 1L, lat = 1.0, lon = 2.0))
+        db.tripPointDao().insertAll(listOf(TripPointEntity(tripId = 0, timestamp = 1L, lat = 1.0, lon = 2.0)))
+        val point = 1L  // first row of a fresh table
         val snap = db.batterySnapshotDao().insert(
             com.bydmate.app.data.local.entity.BatterySnapshotEntity(timestamp = 1L, socStart = 20, socEnd = 80, kwhCharged = 40.0)
         )
@@ -359,7 +360,7 @@ class UploadStoreTest {
     @Test fun `after an upstream migration the small tables are sent again, points are not`() = runBlocking {
         store.ensureInstalled()
         db.tripDao().insert(TripEntity(startTs = 1L))
-        db.tripPointDao().insert(TripPointEntity(tripId = 0, timestamp = 1L, lat = 1.0, lon = 2.0))
+        db.tripPointDao().insertAll(listOf(TripPointEntity(tripId = 0, timestamp = 1L, lat = 1.0, lon = 2.0)))
         drain()
         sql.execSQL("INSERT OR REPLACE INTO plus_upload_meta (key, value) VALUES ('${UploadSchema.FLAG_UPGRADED}', '1')")
         store.ensureInstalled()
